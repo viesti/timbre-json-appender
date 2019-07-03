@@ -16,7 +16,7 @@ A Timbre log invocation maps to JSON messages the following way:
  "msg": "Action failure",             # Included when logging call contains a single argument, or odd number of arguments
  "args: {"user-id": 1},               # All arguments that follow the first argument
  "err": {"via":[{"type":"...,         # When exception is logged, a Throwable->map presentation of the exception
- "ns": "user",                        # Included exception is logged
+ "ns": "user",                        # Included when exception is logged
  "file": "...",                       # ditto
  "line": "..."}                       # ditto
 ```
@@ -54,7 +54,7 @@ user> (timbre/info (IllegalStateException. "Not logged in") "Hello" :user-id 1 :
 {"args":{"user-id":1,"profile":{"role":"tester"}},"ns":"user","file":"*cider-repl home/timbre-json-appender:localhost:49943(clj)*","line":523,"err":{"via":[{"type":"java.lang.IllegalStateException","message":"Not logged in","at":["user$eval11384$fn__11385","invoke","NO_SOURCE_FILE",523]}],"trace":[["user$eval11384$fn__11385","invoke","NO_SOURCE_FILE",523],["clojure.lang.Delay","deref","Delay.java",42],["clojure.core$deref","invokeStatic","core.clj",2320],["clojure.core$deref","invoke","core.clj",2306]
 ```
 
-Data that isn't serializable is elided, to not prevent logging:
+Data that isn't serializable is omitted, to not prevent logging:
 
 ```clojure
 user> (tas/install {:pretty true}) ;; For repl only
