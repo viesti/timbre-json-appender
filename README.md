@@ -45,7 +45,7 @@ user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
 }
 ```
 
-Exceptions are included in `err` key via `Throwable->map` and contain `ns`, `file` and `line` fields:
+Exceptions are included in `err` field via `Throwable->map` and contain `ns`, `file` and `line` fields:
 
 ```clojure
 user> (tas/install)
