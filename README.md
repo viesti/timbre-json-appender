@@ -5,6 +5,22 @@ A structured log appender for [Timbre](https://github.com/ptaoussanis/timbre) us
 Makes extracting data from logs easier in for example [AWS CloudWatch
 Logs](https://aws.amazon.com/about-aws/whats-new/2015/01/20/amazon-cloudwatch-logs-json-log-format-support/) and [GCP Stackdriver Logging](https://cloud.google.com/logging/).
 
+A Timbre log invocation maps to JSON messages the following way:
+
+```clojure
+(timbre/error (IllegalStateException. "Not logged in") "Action failure" :user-id 1)
+=>
+{"timestamp": "2019-07-03T10:00:08Z", # Always included
+ "level": "error",                    # ditto
+ "thread": nRepl-session-...",        # ditto
+ "msg": "Action failure",             # Included when logging call contains a single argument, or odd number of arguments
+ "args: {"user-id": 1},               # All arguments that follow the first argument
+ "err": {"via":[{"type":"...,         # When exception is logged, a Throwable->map presentation of the exception
+ "ns": "user",                        # Included exception is logged
+ "file": "...",                       # ditto
+ "line": "..."}                       # ditto
+```
+
 ## Usage
 
 ```clojure
@@ -28,7 +44,6 @@ user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
   }
 }
 ```
-
 
 Exceptions are included in `err` key via `Throwable->map` and contain `ns`, `file` and `line` fields:
 
