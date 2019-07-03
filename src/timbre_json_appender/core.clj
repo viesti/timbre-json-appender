@@ -3,37 +3,41 @@
             [taoensso.timbre :as timbre])
   (:import (com.fasterxml.jackson.databind SerializationFeature)))
 
-(def object-mapper (doto (json/object-mapper)
-                     (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
+(defn object-mapper [opts]
+  (doto (json/object-mapper opts)
+    (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
 
 (defn json-appender
   "Creates Timbre configuration map for JSON appender"
-  []
-  {:enabled? true
-   :async? false
-   :min-level nil
-   :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs]}]
-         (println (json/write-value-as-string (cond-> {:timestamp instant
-                                                       :level level
-                                                       :thread (.getName (Thread/currentThread))}
-                                                ?err (->
-                                                      (assoc :err (Throwable->map ?err))
-                                                      (assoc :ns ?ns-str)
-                                                      (assoc :file ?file)
-                                                      (assoc :line ?line))
-                                                (even? (count vargs)) (assoc :args (apply hash-map vargs))
-                                                (odd? (count vargs)) (->
-                                                                      (assoc :msg (first vargs))
-                                                                      (assoc :args (apply hash-map (rest vargs)))))
-                                              object-mapper)))})
+  ([]
+   (json-appender {}))
+  ([{:keys [pretty] :or {pretty false}}]
+   {:enabled? true
+    :async? false
+    :min-level nil
+    :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs]}]
+          (println (json/write-value-as-string (cond-> {:timestamp instant
+                                                        :level level
+                                                        :thread (.getName (Thread/currentThread))}
+                                                 ?err (->
+                                                       (assoc :err (Throwable->map ?err))
+                                                       (assoc :ns ?ns-str)
+                                                       (assoc :file ?file)
+                                                       (assoc :line ?line))
+                                                 (even? (count vargs)) (assoc :args (apply hash-map vargs))
+                                                 (odd? (count vargs)) (->
+                                                                       (assoc :msg (first vargs))
+                                                                       (assoc :args (apply hash-map (rest vargs)))))
+                                               (object-mapper {:pretty pretty}))))}))
 
 (defn install
   "Installs json-appender as the sole appender for Timbre"
   ([]
    (install :info))
-  ([level]
+  ([{:keys [level pretty] :or {level :info
+                               pretty false}}]
    (timbre/set-config! {:level level
-                        :appenders {:json (json-appender)}})))
+                        :appenders {:json (json-appender {:pretty pretty})}})))
 
 (defn log-success [request-method uri status]
   (timbre/info :method request-method :uri uri :status status))
