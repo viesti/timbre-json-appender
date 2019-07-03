@@ -1,0 +1,5 @@
+{:paths ["src"]
+ :deps {metosin/jsonista {:mvn/version "0.2.3"}
+        com.taoensso/timbre {:mvn/version "4.10.0"}}
+ :aliases {:test {:extra-paths ["test"]
+                  :extra-deps {lambdaisland/kaocha {:mvn/version "0.0-521"}}}}}
