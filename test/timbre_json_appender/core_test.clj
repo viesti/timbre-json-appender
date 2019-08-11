@@ -43,4 +43,9 @@
 
 (deftest format-string
   (is (= "Hello World!" (-> (parse-string (with-out-str (timbre/infof "Hello %s!" "World")))
-                            :msg))))
+                            :msg)))
+  (let [log (parse-string (with-out-str (timbre/infof "%s %d%% ready" "Upload" 50 :role "admin")))]
+    (is (=  "Upload 50% ready"
+            (:msg log)))
+    (is (= {:role "admin"}
+           (:args log)))))

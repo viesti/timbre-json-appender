@@ -7,9 +7,26 @@
   (doto (json/object-mapper opts)
     (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
 
+(defn count-format-specifiers [format-string]
+  (let [len (.length format-string)]
+    (loop [placeholders 0
+           idx 0]
+      (if (>= idx len)
+        placeholders
+        (let [placeholders (if (= \% (.charAt format-string idx))
+                             (if (and (not (zero? idx))
+                                      (= \% (.charAt format-string (dec idx))))
+                               (dec placeholders)
+                               (inc placeholders))
+                             placeholders)]
+          (recur placeholders (inc idx)))))))
+
 (defn handle-vargs [log-map ?msg-fmt vargs]
   (cond
-    ?msg-fmt (assoc log-map :msg (String/format ?msg-fmt (to-array vargs)))
+    ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)]
+               (assoc log-map
+                      :msg (String/format ?msg-fmt (to-array (take format-specifiers vargs)))
+                      :args (apply hash-map (drop format-specifiers vargs))))
     (even? (count vargs)) (assoc log-map :args (apply hash-map vargs))
     :else (-> log-map
               (assoc :msg (first vargs))
