@@ -12,23 +12,24 @@
   ([]
    (json-appender {}))
   ([{:keys [pretty] :or {pretty false}}]
-   {:enabled? true
-    :async? false
-    :min-level nil
-    :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs]}]
-          (println (json/write-value-as-string (cond-> {:timestamp instant
-                                                        :level level
-                                                        :thread (.getName (Thread/currentThread))}
-                                                 ?err (->
-                                                       (assoc :err (Throwable->map ?err))
-                                                       (assoc :ns ?ns-str)
-                                                       (assoc :file ?file)
-                                                       (assoc :line ?line))
-                                                 (even? (count vargs)) (assoc :args (apply hash-map vargs))
-                                                 (odd? (count vargs)) (->
-                                                                       (assoc :msg (first vargs))
-                                                                       (assoc :args (apply hash-map (rest vargs)))))
-                                               (object-mapper {:pretty pretty}))))}))
+   (let [object-mapper (object-mapper {:pretty pretty})]
+     {:enabled? true
+      :async? false
+      :min-level nil
+      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs]}]
+            (println (json/write-value-as-string (cond-> {:timestamp instant
+                                                          :level level
+                                                          :thread (.getName (Thread/currentThread))}
+                                                   ?err (->
+                                                         (assoc :err (Throwable->map ?err))
+                                                         (assoc :ns ?ns-str)
+                                                         (assoc :file ?file)
+                                                         (assoc :line ?line))
+                                                   (even? (count vargs)) (assoc :args (apply hash-map vargs))
+                                                   (odd? (count vargs)) (->
+                                                                         (assoc :msg (first vargs))
+                                                                         (assoc :args (apply hash-map (rest vargs)))))
+                                                 object-mapper)))})))
 
 (defn install
   "Installs json-appender as the sole appender for Timbre"
