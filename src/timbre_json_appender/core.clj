@@ -7,6 +7,14 @@
   (doto (json/object-mapper opts)
     (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
 
+(defn handle-vargs [log-map ?msg-fmt vargs]
+  (cond
+    ?msg-fmt (assoc log-map :msg (String/format ?msg-fmt (to-array vargs)))
+    (even? (count vargs)) (assoc log-map :args (apply hash-map vargs))
+    :else (-> log-map
+              (assoc :msg (first vargs))
+              (assoc :args (apply hash-map (rest vargs))))))
+
 (defn json-appender
   "Creates Timbre configuration map for JSON appender"
   ([]
@@ -16,20 +24,19 @@
      {:enabled? true
       :async? false
       :min-level nil
-      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs]}]
-            (println (json/write-value-as-string (cond-> {:timestamp instant
-                                                          :level level
-                                                          :thread (.getName (Thread/currentThread))}
-                                                   ?err (->
-                                                         (assoc :err (Throwable->map ?err))
-                                                         (assoc :ns ?ns-str)
-                                                         (assoc :file ?file)
-                                                         (assoc :line ?line))
-                                                   (even? (count vargs)) (assoc :args (apply hash-map vargs))
-                                                   (odd? (count vargs)) (->
-                                                                         (assoc :msg (first vargs))
-                                                                         (assoc :args (apply hash-map (rest vargs)))))
-                                                 object-mapper)))})))
+      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt]}]
+            (let [log-map (handle-vargs {:timestamp instant
+                                         :level level
+                                         :thread (.getName (Thread/currentThread))}
+                                        ?msg-fmt
+                                        vargs)
+                  log-map (cond-> log-map
+                            ?err (->
+                                  (assoc :err (Throwable->map ?err))
+                                  (assoc :ns ?ns-str)
+                                  (assoc :file ?file)
+                                  (assoc :line ?line)))]
+              (println (json/write-value-as-string log-map object-mapper))))})))
 
 (defn install
   "Installs json-appender as the sole appender for Timbre"

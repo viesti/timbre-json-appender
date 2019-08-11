@@ -40,3 +40,7 @@
   (is (= "poks" (-> (parse-string (with-out-str (timbre/info (Exception. "poks") "Error")))
                     :err
                     :cause))))
+
+(deftest format-string
+  (is (= "Hello World!" (-> (parse-string (with-out-str (timbre/infof "Hello %s!" "World")))
+                            :msg))))
