@@ -71,3 +71,14 @@ user> (timbre/info "Hello" :o (Object.))
   }
 }
 ```
+
+# Changelog
+
+2019-08-11
+
+* Create object mapper only once (improves performance)
+* Support format string style log formatting
+
+2019-07-03
+
+* Initial release
