@@ -1,5 +1,7 @@
 # timbre-json-appender
 
+[![CircleCI](https://circleci.com/gh/viesti/timbre-json-appender.svg?style=svg)](https://circleci.com/gh/viesti/timbre-json-appender)
+
 A structured log appender for [Timbre](https://github.com/ptaoussanis/timbre) using [jsonista](https://github.com/metosin/jsonista).
 
 Makes extracting data from logs easier in for example [AWS CloudWatch
