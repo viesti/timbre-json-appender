@@ -1,6 +1,6 @@
 # timbre-json-appender
 
-[![CircleCI](https://circleci.com/gh/viesti/timbre-json-appender.svg?style=svg)](https://circleci.com/gh/viesti/timbre-json-appender)
+[![CircleCI](https://circleci.com/gh/viesti/timbre-json-appender.svg?style=svg)](https://circleci.com/gh/viesti/timbre-json-appender) [![Clojars Project](https://img.shields.io/clojars/v/viesti/timbre-json-appender.svg)](https://clojars.org/viesti/timbre-json-appender)
 
 A structured log appender for [Timbre](https://github.com/ptaoussanis/timbre) using [jsonista](https://github.com/metosin/jsonista).
 
