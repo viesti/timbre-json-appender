@@ -37,11 +37,13 @@
   ([]
    (json-appender {}))
   ([{:keys [pretty] :or {pretty false}}]
-   (let [object-mapper (object-mapper {:pretty pretty})]
+   (let [object-mapper (object-mapper {:pretty pretty})
+         println-appender (taoensso.timbre/println-appender)
+         fallback-logger (:fn println-appender)]
      {:enabled? true
       :async? false
       :min-level nil
-      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt]}]
+      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt] :as data}]
             (let [log-map (handle-vargs {:timestamp instant
                                          :level level
                                          :thread (.getName (Thread/currentThread))}
@@ -53,7 +55,10 @@
                                   (assoc :ns ?ns-str)
                                   (assoc :file ?file)
                                   (assoc :line ?line)))]
-              (println (json/write-value-as-string log-map object-mapper))))})))
+              (try
+                (println (json/write-value-as-string log-map object-mapper))
+                (catch Throwable _
+                  (fallback-logger data)))))})))
 
 (defn install
   "Installs json-appender as the sole appender for Timbre"
