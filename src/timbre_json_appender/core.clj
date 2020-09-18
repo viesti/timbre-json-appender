@@ -21,22 +21,39 @@
                              placeholders)]
           (recur placeholders (inc idx)))))))
 
-(defn handle-vargs [log-map ?msg-fmt vargs]
+(defn inline-args [log-map args]
+  (reduce (fn [acc [k v]]
+            (assoc acc k v))
+          log-map
+          (partition 2 args)))
+
+(defn has-message? [vargs]
+  (odd? (count vargs)))
+
+(defn handle-vargs [log-map ?msg-fmt vargs inline-args?]
   (cond
-    ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)]
-               (assoc log-map
-                      :msg (String/format ?msg-fmt (to-array (take format-specifiers vargs)))
-                      :args (apply hash-map (drop format-specifiers vargs))))
-    (even? (count vargs)) (assoc log-map :args (apply hash-map vargs))
-    :else (-> log-map
-              (assoc :msg (first vargs))
-              (assoc :args (apply hash-map (rest vargs))))))
+    ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)
+                   log-map (assoc log-map :msg (String/format ?msg-fmt (to-array (take format-specifiers vargs))))]
+               (if inline-args?
+                 (inline-args log-map (drop format-specifiers vargs))
+                 (assoc log-map :args (apply hash-map (seq (drop format-specifiers vargs))))))
+    :else (let [message-found (has-message? vargs)
+                log-map (if message-found
+                          (assoc log-map :msg (first vargs))
+                          log-map)]
+            (if inline-args?
+              (inline-args log-map (if message-found
+                                     (rest vargs)
+                                     vargs))
+              (assoc log-map :args (apply hash-map (if message-found
+                                                     (rest vargs)
+                                                     vargs)))))))
 
 (defn json-appender
   "Creates Timbre configuration map for JSON appender"
   ([]
    (json-appender {}))
-  ([{:keys [pretty] :or {pretty false}}]
+  ([{:keys [pretty inline-args?] :or {pretty false inline-args? false}}]
    (let [object-mapper (object-mapper {:pretty pretty})
          println-appender (taoensso.timbre/println-appender)
          fallback-logger (:fn println-appender)]
@@ -48,7 +65,8 @@
                                          :level level
                                          :thread (.getName (Thread/currentThread))}
                                         ?msg-fmt
-                                        vargs)
+                                        vargs
+                                        inline-args?)
                   log-map (cond-> log-map
                             ?err (->
                                   (assoc :err (Throwable->map ?err))
@@ -61,13 +79,18 @@
                   (fallback-logger data)))))})))
 
 (defn install
-  "Installs json-appender as the sole appender for Timbre"
+  "Installs json-appender as the sole appender for Timbre, options
+
+  `level`:       Timbre log level
+  `pretty`:      Pretty-print JSON
+  `inline-args?` Place arguments on top level, instead of placing behing `args` field"
   ([]
    (install :info))
-  ([{:keys [level pretty] :or {level :info
-                               pretty false}}]
+  ([{:keys [level pretty inline-args?] :or {level :info
+                                           pretty false
+                                           inline-args? true}}]
    (timbre/set-config! {:level level
-                        :appenders {:json (json-appender {:pretty pretty})}})))
+                        :appenders {:json (json-appender {:pretty pretty :inline-args? inline-args?})}})))
 
 (defn log-success [request-method uri status]
   (timbre/info :method request-method :uri uri :status status))

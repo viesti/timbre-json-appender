@@ -49,3 +49,31 @@
             (:msg log)))
     (is (= {:role "admin"}
            (:args log)))))
+
+(deftest inline-args
+  (let [inline-args-config {:level :info
+                            :appenders {:json (sut/json-appender {:inline-args? true})}}]
+    (testing "simple"
+      (let [log (parse-string (with-out-str
+                                (timbre/with-config inline-args-config
+                              (timbre/info "plop" :a 1))))]
+        (is (= "plop" (:msg log)))
+        (is (= 1 (:a log)))))
+    (testing "with format"
+      (let [log (parse-string (with-out-str
+                                (timbre/with-config inline-args-config
+                                  (timbre/infof "count: %d" 1 :a 1))))]
+        (is (= "count: 1" (:msg log)))
+        (is (= 1 (:a log)))))
+    (testing "no args"
+      (let [log (parse-string (with-out-str
+                                (timbre/with-config inline-args-config
+                                  (timbre/info "test"))))]
+        (is (= "test" (:msg log)))
+        (is (= #{:timestamp :level :thread :msg} (set (keys log))))))
+    (testing "only args"
+      (let [log (parse-string (with-out-str
+                                (timbre/with-config inline-args-config
+                                  (timbre/info :a 1))))]
+        (is (= 1 (:a log)))
+        (is (= #{:timestamp :level :thread :a} (set (keys log))))))))
