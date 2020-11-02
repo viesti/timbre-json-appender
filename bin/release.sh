@@ -13,6 +13,8 @@ set -eux
 git tag $VERSION
 git push origin $VERSION
 
+mkdir -p target
+
 cp pom-template.xml pom.xml
 clojure -Srepro -Spom
 sed -e "s/VERSION/$VERSION/g" \
@@ -21,7 +23,6 @@ sed -e "s/VERSION/$VERSION/g" \
     pom.xml
 mv pom.xml target/pom.xml
 
-mkdir target
 clojure -Srepro \
         -A:pack \
         mach.pack.alpha.skinny \
