@@ -85,6 +85,10 @@ As a last resort, default println appender is used, if JSON serialization fails.
 
 # Changelog
 
+2020-11-02 (0.1.1)
+
+* Support inlining arguments
+
 2020-08-13
 
 * Use taoensso.timbre/println-appender as fallback if JSON serialization fails
