@@ -50,13 +50,22 @@
     (is (= {:role "admin"}
            (:args log)))))
 
+(deftest context-item
+  (let [log (parse-string 
+              (with-out-str 
+                (timbre/with-context {:context-item 987}
+                  (timbre/infof "%s %d%% ready" "Upload" 50 :role "admin"))))]
+    (is (= {:role "admin"
+            :context-item 987}
+           (:args log)))))
+
 (deftest inline-args
   (let [inline-args-config {:level :info
                             :appenders {:json (sut/json-appender {:inline-args? true})}}]
     (testing "simple"
       (let [log (parse-string (with-out-str
                                 (timbre/with-config inline-args-config
-                              (timbre/info "plop" :a 1))))]
+                                 (timbre/info "plop" :a 1))))]
         (is (= "plop" (:msg log)))
         (is (= 1 (:a log)))))
     (testing "with format"
@@ -76,4 +85,10 @@
                                 (timbre/with-config inline-args-config
                                   (timbre/info :a 1))))]
         (is (= 1 (:a log)))
-        (is (= #{:timestamp :level :thread :a} (set (keys log))))))))
+        (is (= #{:timestamp :level :thread :a} (set (keys log))))))
+    (testing "with context"
+      (let [log (parse-string (with-out-str
+                                (timbre/with-config inline-args-config
+                                  (timbre/with-context {:test-context 123}
+                                    (timbre/info :a 1)))))]
+        (is (= 123 (:test-context log)))))))
