@@ -60,7 +60,7 @@
      {:enabled? true
       :async? false
       :min-level nil
-      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt] :as data}]
+      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt context] :as data}]
             (let [log-map (handle-vargs {:timestamp instant
                                          :level level
                                          :thread (.getName (Thread/currentThread))}
@@ -72,7 +72,11 @@
                                   (assoc :err (Throwable->map ?err))
                                   (assoc :ns ?ns-str)
                                   (assoc :file ?file)
-                                  (assoc :line ?line)))]
+                                  (assoc :line ?line))
+                            (and context inline-args?) 
+                            (merge context)
+                            (and context (not inline-args?))
+                            (update :args merge context))]
               (try
                 (println (json/write-value-as-string log-map object-mapper))
                 (catch Throwable _
@@ -87,8 +91,8 @@
   ([]
    (install :info))
   ([{:keys [level pretty inline-args?] :or {level :info
-                                           pretty false
-                                           inline-args? true}}]
+                                            pretty false
+                                            inline-args? true}}]
    (timbre/set-config! {:level level
                         :appenders {:json (json-appender {:pretty pretty :inline-args? inline-args?})}})))
 
