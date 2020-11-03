@@ -81,6 +81,20 @@ user> (timbre/info "Hello" :role :admin)
 nil
 ```
 
+If you use Timbre's [`with-context`](http://ptaoussanis.github.io/timbre/taoensso.timbre.html#var-with-context),
+it will be added to your output automatically (and respects inline-args settings too)
+
+```
+user=> (tas/install)
+user=> (timbre/with-context {:important-context "goes-here" :and :here} (timbre/info "test"))
+{"timestamp":"2020-11-03T11:24:45Z","level":"info","thread":"main","msg":"test","important-context":"goes-here","and":"here"}
+user=> (tas/install {:inline-args? false})
+user=> (timbre/with-context {:important-context "goes-here" :and :here} (timbre/info "test"))
+{"timestamp":"2020-11-03T11:25:14Z","level":"info","thread":"main","msg":"test","args":{"important-context":"goes-here","and":"here"}}
+
+```
+
+
 As a last resort, default println appender is used, if JSON serialization fails.
 
 # Changelog
