@@ -99,6 +99,10 @@ As a last resort, default println appender is used, if JSON serialization fails.
 
 # Changelog
 
+2020-11-03 (0.1.2)
+
+* Support timbre/with-context
+
 2020-11-02 (0.1.1)
 
 * Support inlining arguments
