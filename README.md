@@ -70,6 +70,9 @@ user> (timbre/info "Hello" :o (Object.))
     "o" : { }
   }
 }
+
+As a last resort, default println appender is used, if JSON serialization fails.
+
 ```
 
 Arguments can also be placed inline, instead of being put behind `:args` key.
@@ -95,9 +98,22 @@ user=> (timbre/with-context {:important-context "goes-here" :and :here} (timbre/
 ```
 
 
-As a last resort, default println appender is used, if JSON serialization fails.
+If you need to emit the log-level to a key other than `level`, you can supply the `level-key` arg
+
+```
+user=> (tas/install)
+user=> (timbre/info "test")
+{"timestamp":"2020-11-07T00:28:36Z","level":"info","thread":"main","msg":"test"}
+user=> (tas/install {:level-key :severity})
+user=> (timbre/info "test")
+{"timestamp":"2020-11-07T00:28:50Z","severity":"info","thread":"main","msg":"test"}
+```
 
 # Changelog
+
+2020-11-07 (0.1.3)
+
+* Support to change the level key from level to (eg severity to support GCP Logging)
 
 2020-11-03 (0.1.2)
 
