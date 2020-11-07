@@ -92,3 +92,20 @@
                                   (timbre/with-context {:test-context 123}
                                     (timbre/info :a 1)))))]
         (is (= 123 (:test-context log)))))))
+
+
+(deftest level-key-changes
+  (let [level-key-diff {:level :info :appenders {:json (sut/json-appender {})}}]
+    (testing "test key for info"
+      (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/info "test"))))]
+        (is (= "info" (:level log)))))
+    (testing "test key for info"
+      (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/warn "test"))))]
+        (is (= "warn" (:level log))))))
+  (let [level-key-diff {:level :info :appenders {:json (sut/json-appender {:level-key :severity})}}]
+    (testing "test key for info"
+      (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/info "test"))))]
+        (is (= "info" (:severity log)))))
+    (testing "test key for info"
+      (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/warn "test"))))]
+        (is (= "warn" (:severity log)))))))

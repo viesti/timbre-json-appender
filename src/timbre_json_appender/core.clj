@@ -53,7 +53,7 @@
   "Creates Timbre configuration map for JSON appender"
   ([]
    (json-appender {}))
-  ([{:keys [pretty inline-args?] :or {pretty false inline-args? false}}]
+  ([{:keys [pretty inline-args? level-key] :or {pretty false inline-args? false level-key :level}}]
    (let [object-mapper (object-mapper {:pretty pretty})
          println-appender (taoensso.timbre/println-appender)
          fallback-logger (:fn println-appender)]
@@ -62,7 +62,7 @@
       :min-level nil
       :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt context] :as data}]
             (let [log-map (handle-vargs {:timestamp instant
-                                         :level level
+                                         level-key level
                                          :thread (.getName (Thread/currentThread))}
                                         ?msg-fmt
                                         vargs
@@ -90,11 +90,14 @@
   `inline-args?` Place arguments on top level, instead of placing behing `args` field"
   ([]
    (install :info))
-  ([{:keys [level pretty inline-args?] :or {level :info
-                                            pretty false
-                                            inline-args? true}}]
+  ([{:keys [level pretty inline-args? level-key] :or {level :info
+                                                      level-key :level
+                                                      pretty false
+                                                      inline-args? true}}]
    (timbre/set-config! {:level level
-                        :appenders {:json (json-appender {:pretty pretty :inline-args? inline-args?})}})))
+                        :appenders {:json (json-appender {:pretty pretty 
+                                                          :inline-args? inline-args?
+                                                          :level-key level-key})}})))
 
 (defn log-success [request-method uri status]
   (timbre/info :method request-method :uri uri :status status))
