@@ -25,6 +25,27 @@
     (is (= "Task done" (:msg log)))
     (is (= 5 (-> log :args :duration)))))
 
+(deftest message-and-map
+  (let [log (parse-string (with-out-str (timbre/info "Task done" {:duration 5
+                                                                  :operation "123"})))]
+    (is (= "Task done" (:msg log)))
+    (is (= 5 (-> log :args :duration)))
+    (is (= "123" (-> log :args :operation)))))
+
+(deftest only-map
+  (let [log (parse-string (with-out-str (timbre/info {:duration 5
+                                                      :operation "123"})))]
+    (is (= nil (:msg log)))
+    (is (= 5 (-> log :args :duration)))
+    (is (= "123" (-> log :args :operation)))))
+
+(deftest two-args-with-map
+  (let [log (parse-string (with-out-str (timbre/info :some-context {:duration 5
+                                                                    :operation "123"})))]
+    (is (= nil (:msg log)))
+    (is (= {:duration 5
+            :operation "123"} (-> log :args :some-context)))))
+
 (deftest unserializable-value
   (testing "in a field"
     (is (= {} (-> (parse-string (with-out-str (timbre/info :a (Object.))))
@@ -51,10 +72,10 @@
            (:args log)))))
 
 (deftest context-item
-  (let [log (parse-string 
-              (with-out-str 
-                (timbre/with-context {:context-item 987}
-                  (timbre/infof "%s %d%% ready" "Upload" 50 :role "admin"))))]
+  (let [log (parse-string
+             (with-out-str
+               (timbre/with-context {:context-item 987}
+                 (timbre/infof "%s %d%% ready" "Upload" 50 :role "admin"))))]
     (is (= {:role "admin"
             :context-item 987}
            (:args log)))))
@@ -65,7 +86,7 @@
     (testing "simple"
       (let [log (parse-string (with-out-str
                                 (timbre/with-config inline-args-config
-                                 (timbre/info "plop" :a 1))))]
+                                  (timbre/info "plop" :a 1))))]
         (is (= "plop" (:msg log)))
         (is (= 1 (:a log)))))
     (testing "with format"
