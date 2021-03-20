@@ -25,12 +25,24 @@
     (is (= "Task done" (:msg log)))
     (is (= 5 (-> log :args :duration)))))
 
+(deftest non-string-message-and-args
+  (let [log (parse-string (with-out-str (timbre/info 1 :duration 5)))]
+    (is (= 1 (:msg log)))
+    (is (= 5 (-> log :args :duration)))))
+
 (deftest message-and-map
   (let [log (parse-string (with-out-str (timbre/info "Task done" {:duration 5
                                                                   :operation "123"})))]
     (is (= "Task done" (:msg log)))
     (is (= 5 (-> log :args :duration)))
     (is (= "123" (-> log :args :operation)))))
+
+(deftest non-string-message-and-map
+  (let [log (parse-string (with-out-str (timbre/info 1 {:duration 5
+                                                        :operation "123"})))]
+    (is (= nil (:msg log)))
+    (is (= {:duration 5
+            :operation "123"} (-> log :args :1)))))
 
 (deftest only-map
   (let [log (parse-string (with-out-str (timbre/info {:duration 5

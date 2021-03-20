@@ -23,17 +23,18 @@
 
 (defn collect-vargs [vargs]
   (cond
-    ;; assume a string message precedes keyword-style args
-    (and (string? (first vargs)) (odd? (count vargs))) {:message (first vargs)
-                                                        :args (apply hash-map (rest vargs))}
     ;; if only two vargs are provided with types [string, map], take the map as args
     (and (= 2 (count vargs))
          (string? (first vargs))
-         (map? (second vargs)))  {:message (first vargs)
-                                  :args (second vargs)}
+         (map? (second vargs))) {:message (first vargs)
+                                 :args (second vargs)}
+    ;; if only a map is provided, take it as args
     (and (= 1 (count vargs))
          (map? (first vargs))) {:message nil
                                 :args (first vargs)}
+    ;; assume a  message precedes keyword-style args
+    (odd? (count vargs)) {:message (first vargs)
+                          :args (apply hash-map (rest vargs))}
     ;; else take the vargs as keyword-style args
     :else  {:message nil
             :args (apply hash-map vargs)}))
