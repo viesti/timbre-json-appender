@@ -15,12 +15,20 @@ A Timbre log invocation maps to JSON messages the following way:
 {"timestamp": "2019-07-03T10:00:08Z", # Always included
  "level": "error",                    # ditto
  "thread": nRepl-session-...",        # ditto
- "msg": "Action failure",             # Included when logging call contains a single argument, or odd number of arguments
- "args: {"user-id": 1},               # All arguments that follow the first argument
+ "msg": "Action failure",             # An (optional) first argument
+ "user-id": 1,                        # Keyword style arguments
  "err": {"via":[{"type":"...,         # When exception is logged, a Throwable->map presentation of the exception
  "ns": "user",                        # Included when exception is logged
  "file": "...",                       # ditto
  "line": "..."}                       # ditto
+```
+
+Note that in version `0.1.1`, `:inline-args?` became the default style, and previously arguments were placed under `:args` key. This output style is still available with `:inline-args? false`:
+
+```
+...
+"args": {"user-id": 1},
+...
 ```
 
 ## Usage
