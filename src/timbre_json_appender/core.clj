@@ -73,7 +73,7 @@
                                   (assoc :ns ?ns-str)
                                   (assoc :file ?file)
                                   (assoc :line ?line))
-                            (and context inline-args?) 
+                            (and context inline-args?)
                             (merge context)
                             (and context (not inline-args?))
                             (update :args merge context))]
@@ -85,17 +85,17 @@
 (defn install
   "Installs json-appender as the sole appender for Timbre, options
 
-  `level`:       Timbre log level
+  `level`:       Timbre log level (deprecated, prefer min-level)
+  `min-level`:   Timbre log level
   `pretty`:      Pretty-print JSON
   `inline-args?` Place arguments on top level, instead of placing behing `args` field"
   ([]
    (install :info))
-  ([{:keys [level pretty inline-args? level-key] :or {level :info
-                                                      level-key :level
-                                                      pretty false
-                                                      inline-args? true}}]
-   (timbre/set-config! {:level level
-                        :appenders {:json (json-appender {:pretty pretty 
+  ([{:keys [level min-level pretty inline-args? level-key] :or {level-key :level
+                                                                pretty false
+                                                                inline-args? true}}]
+   (timbre/set-config! {:min-level (or min-level level :info)
+                        :appenders {:json (json-appender {:pretty pretty
                                                           :inline-args? inline-args?
                                                           :level-key level-key})}})))
 
