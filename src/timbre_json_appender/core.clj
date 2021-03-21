@@ -3,11 +3,13 @@
             [taoensso.timbre :as timbre])
   (:import (com.fasterxml.jackson.databind SerializationFeature)))
 
+(set! *warn-on-reflection* true)
+
 (defn object-mapper [opts]
   (doto (json/object-mapper opts)
     (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
 
-(defn count-format-specifiers [format-string]
+(defn count-format-specifiers [^String format-string]
   (let [len (.length format-string)]
     (loop [placeholders 0
            idx 0]
