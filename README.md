@@ -29,9 +29,15 @@ A Timbre log invocation maps to JSON messages the following way:
 user> (require '[timbre-json-appender.core :as tas])
 user> (tas/install) ;; Set json-appender as sole Timbre appender
 user> (require '[taoensso.timbre :as timbre])
-user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
+
+user> (timbre/info "Hello" :user-id 1 :profile {:role :tester}) ;; keyword style args (supports varg pairs with an optional leading message)
 {"timestamp":"2019-07-03T10:00:08Z","level":"info","thread":"nRepl-session-97b9389e-a563-4f0d-8b8a-f58050297092","msg":"Hello","args":{"user-id":1,"profile":{"role":"tester"}}}
+
+user> (timbre/info "Hello" {:user-id 1 :profile {:role :tester}}) ;; map style args (supports a single map with an optional leading message)
+{"timestamp":"2019-07-03T10:00:08Z","level":"info","thread":"nRepl-session-97b9389e-a563-4f0d-8b8a-f58050297092","msg":"Hello","args":{"user-id":1,"profile":{"role":"tester"}}}
+
 user> (tas/install {:pretty true}) ;; For repl only
+
 user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
 {
   "timestamp" : "2019-07-03T10:23:38Z",
@@ -46,6 +52,14 @@ user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
   }
 }
 ```
+
+Note the expected format:
+
+-   An (optional) leading message is used as the as `msg` key
+-   Any subsequent keyword-pair style args (e.g. `:arg-1 1 :arg-2 "value"`) are added to the `args` map
+-   If no message is provided, keyword-pair style args will be taken as `args`
+-   If a message and a map is provided, the message will be used as `msg` and the hash-map will be taken as `args`
+-   If only a hash-map is provided, it will be taken as `args`
 
 Exceptions are included in `err` field via `Throwable->map` and contain `ns`, `file` and `line` fields:
 
@@ -77,7 +91,7 @@ As a last resort, default println appender is used, if JSON serialization fails.
 
 Arguments can also be placed inline, instead of being put behind `:args` key.
 
-```
+```shell
 user> (tas/install {:inline-args? true})
 user> (timbre/info "Hello" :role :admin)
 {"timestamp":"2020-09-18T20:26:59Z","level":"info","thread":"nREPL-session-0ac148ff-e0c2-4578-ac64-e5411de14d1f","msg":"Hello","role":"admin"}
@@ -87,7 +101,7 @@ nil
 If you use Timbre's [`with-context`](http://ptaoussanis.github.io/timbre/taoensso.timbre.html#var-with-context),
 it will be added to your output automatically (and respects inline-args settings too)
 
-```
+```shell
 user=> (tas/install)
 user=> (timbre/with-context {:important-context "goes-here" :and :here} (timbre/info "test"))
 {"timestamp":"2020-11-03T11:24:45Z","level":"info","thread":"main","msg":"test","important-context":"goes-here","and":"here"}
@@ -97,10 +111,9 @@ user=> (timbre/with-context {:important-context "goes-here" :and :here} (timbre/
 
 ```
 
-
 If you need to emit the log-level to a key other than `level`, you can supply the `level-key` arg
 
-```
+```shell
 user=> (tas/install)
 user=> (timbre/info "test")
 {"timestamp":"2020-11-07T00:28:36Z","level":"info","thread":"main","msg":"test"}
@@ -113,25 +126,25 @@ user=> (timbre/info "test")
 
 2020-11-07 (0.1.3)
 
-* Support to change the level key from level to (eg severity to support GCP Logging)
+-   Support to change the level key from level to (eg severity to support GCP Logging)
 
 2020-11-03 (0.1.2)
 
-* Support timbre/with-context
+-   Support timbre/with-context
 
 2020-11-02 (0.1.1)
 
-* Support inlining arguments
+-   Support inlining arguments
 
 2020-08-13
 
-* Use taoensso.timbre/println-appender as fallback if JSON serialization fails
+-   Use taoensso.timbre/println-appender as fallback if JSON serialization fails
 
 2019-08-11
 
-* Create object mapper only once (improves performance)
-* Support format string style log formatting
+-   Create object mapper only once (improves performance)
+-   Support format string style log formatting
 
 2019-07-03
 
-* Initial release
+-   Initial release

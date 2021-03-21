@@ -3,11 +3,13 @@
             [taoensso.timbre :as timbre])
   (:import (com.fasterxml.jackson.databind SerializationFeature)))
 
+(set! *warn-on-reflection* true)
+
 (defn object-mapper [opts]
   (doto (json/object-mapper opts)
     (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
 
-(defn count-format-specifiers [format-string]
+(defn count-format-specifiers [^String format-string]
   (let [len (.length format-string)]
     (loop [placeholders 0
            idx 0]
@@ -21,33 +23,39 @@
                              placeholders)]
           (recur placeholders (inc idx)))))))
 
-(defn inline-args [log-map args]
-  (reduce (fn [acc [k v]]
-            (assoc acc k v))
-          log-map
-          (partition 2 args)))
+(defn collect-vargs [vargs]
+  (cond
+    ;; if only two vargs are provided with types [string, map], take the map as args
+    (and (= 2 (count vargs))
+         (string? (first vargs))
+         (map? (second vargs))) {:message (first vargs)
+                                 :args (second vargs)}
+    ;; if only a map is provided, take it as args
+    (and (= 1 (count vargs))
+         (map? (first vargs))) {:message nil
+                                :args (first vargs)}
+    ;; assume a  message precedes keyword-style args
+    (odd? (count vargs)) {:message (first vargs)
+                          :args (apply hash-map (rest vargs))}
+    ;; else take the vargs as keyword-style args
+    :else  {:message nil
+            :args (apply hash-map vargs)}))
 
-(defn has-message? [vargs]
-  (odd? (count vargs)))
+(defn- merge-log-map [inline-args? log-map args]
+  (if inline-args?
+    (merge log-map args)
+    (assoc log-map :args args)))
 
 (defn handle-vargs [log-map ?msg-fmt vargs inline-args?]
   (cond
     ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)
                    log-map (assoc log-map :msg (String/format ?msg-fmt (to-array (take format-specifiers vargs))))]
-               (if inline-args?
-                 (inline-args log-map (drop format-specifiers vargs))
-                 (assoc log-map :args (apply hash-map (seq (drop format-specifiers vargs))))))
-    :else (let [message-found (has-message? vargs)
-                log-map (if message-found
-                          (assoc log-map :msg (first vargs))
+               (merge-log-map inline-args? log-map (apply hash-map (seq (drop format-specifiers vargs)))))
+    :else (let [{:keys [message args]} (collect-vargs vargs)
+                log-map (if message
+                          (assoc log-map :msg message)
                           log-map)]
-            (if inline-args?
-              (inline-args log-map (if message-found
-                                     (rest vargs)
-                                     vargs))
-              (assoc log-map :args (apply hash-map (if message-found
-                                                     (rest vargs)
-                                                     vargs)))))))
+            (merge-log-map inline-args? log-map args))))
 
 (defn json-appender
   "Creates Timbre configuration map for JSON appender"
@@ -106,7 +114,7 @@
   (timbre/error t "Failed to handle request" :method request-method :uri uri))
 
 (defn wrap-json-logging
-  "Ring middleware for JSON logging. Logs :method, :uri and :status for successfull handler invocations,
+  "Ring middleware for JSON logging. Logs :method, :uri and :status for successful handler invocations,
   :method and :uri for failed invocations."
   [handler]
   (fn
