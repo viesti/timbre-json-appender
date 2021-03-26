@@ -100,7 +100,7 @@ As a last resort, default println appender is used, if JSON serialization fails.
 Arguments can also be placed inline, instead of being put behind `:args` key.
 
 ```shell
-user> (tas/install {:inline-args? true})
+user> (tas/install {:inline-args? true}) ;; Note that :inline-args? defaults to true in tas/install
 user> (timbre/info "Hello" :role :admin)
 {"timestamp":"2020-09-18T20:26:59Z","level":"info","thread":"nREPL-session-0ac148ff-e0c2-4578-ac64-e5411de14d1f","msg":"Hello","role":"admin"}
 nil
