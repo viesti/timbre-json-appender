@@ -140,6 +140,10 @@ user=> (timbre/info "Hello" {:user-id 1})
 
 # Changelog
 
+2021-03-26 (0.2.0)
+
+-   Support maps as argument
+
 2020-11-07 (0.1.3)
 
 -   Support to change the level key from level to (eg severity to support GCP Logging)
