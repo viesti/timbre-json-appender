@@ -130,6 +130,14 @@ user=> (timbre/info "test")
 {"timestamp":"2020-11-07T00:28:50Z","severity":"info","thread":"main","msg":"test"}
 ```
 
+Map can be passed as an argument, to merge data onto the log output map. This avoids the need to use keyword style to get data onto the top level output map:
+
+```shell
+user=> (tas/install)
+user=> (timbre/info "Hello" {:user-id 1})
+{"timestamp":"2021-03-26T15:05:16Z","level":"info","thread":"main","msg":"Hello","user-id":1}
+```
+
 # Changelog
 
 2020-11-07 (0.1.3)
