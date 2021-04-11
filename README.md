@@ -14,7 +14,8 @@ A Timbre log invocation maps to JSON messages the following way:
 =>
 {"timestamp": "2019-07-03T10:00:08Z", # Always included
  "level": "error",                    # ditto
- "thread": nRepl-session-...",        # ditto
+ "thread": "nRepl-session-...",       # ditto
+ "hostname": "localhost",             # ditto
  "msg": "Action failure",             # An (optional) first argument
  "user-id": 1,                        # Keyword style arguments
  "err": {"via":[{"type":"...,         # When exception is logged, a Throwable->map presentation of the exception
@@ -50,6 +51,7 @@ user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
 {
   "timestamp" : "2019-07-03T10:23:38Z",
   "level" : "info",
+  "hostname": "localhost",
   "thread" : "nRepl-session-97b9389e-a563-4f0d-8b8a-f58050297092",
   "msg" : "Hello",
   "args" : {
@@ -137,6 +139,9 @@ user=> (tas/install)
 user=> (timbre/info "Hello" {:user-id 1})
 {"timestamp":"2021-03-26T15:05:16Z","level":"info","thread":"main","msg":"Hello","user-id":1}
 ```
+
+If you wish to change the default fields: `:hostname :thread :ns :file :line` which are logged a function: `:should-log-field-fn` with the signture `(field-name, timbre-data) -> boolean` can be provided which should return a boolean indicating whether to log the field.
+By default `tas/default-should-log-field-fn` is used. This only logs `:hostname` and `:thread` unless an error occurs, in which case `:ns`, `:file` and `:line` are also output.
 
 # Changelog
 
