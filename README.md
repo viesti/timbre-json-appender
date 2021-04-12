@@ -140,7 +140,7 @@ user=> (timbre/info "Hello" {:user-id 1})
 {"timestamp":"2021-03-26T15:05:16Z","level":"info","thread":"main","msg":"Hello","user-id":1}
 ```
 
-If you wish to change the default fields: `:hostname :thread :ns :file :line` which are logged a function: `:should-log-field-fn` with the signture `(field-name, timbre-data) -> boolean` can be provided which should return a boolean indicating whether to log the field.
+If you wish to change the default fields: `:hostname :thread :ns :file :line` which are logged a function: `:should-log-field-fn` with the signature `(field-name, timbre-data) -> boolean` can be provided which should return a boolean indicating whether to log the field.
 By default `tas/default-should-log-field-fn` is used. This only logs `:hostname` and `:thread` unless an error occurs, in which case `:ns`, `:file` and `:line` are also output.
 
 # Changelog
