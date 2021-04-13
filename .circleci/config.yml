@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/clojure:openjdk-8-tools-deps-1.9.0.397
+      - image: circleci/clojure:openjdk-15-tools-deps-1.10.3.822-buster
     steps:
       - checkout
       - restore_cache:
