@@ -106,7 +106,7 @@
                (with-out-str
                  (timbre/with-context {:thread "admin"}
                    (timbre/infof "%s %d%% ready" "Upload" 50 :thread "developer"))))]
-      (is (= "main"
+      (is (= (.getName (Thread/currentThread))
              (:thread log))))))
 
 (deftest inline-args
@@ -144,7 +144,7 @@
       (let [log (parse-string (with-out-str
                                 (timbre/with-config inline-args-config
                                   (timbre/info :thread "some-thread"))))]
-        (is (= "main"
+        (is (= (.getName (Thread/currentThread))
                (:thread log)))))
 
     (testing "with context"
