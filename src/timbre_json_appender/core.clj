@@ -48,7 +48,7 @@
 
 (defn handle-vargs
   "Handles varg parsing, adding the msg and the given context to the given log map.
-   
+
    If inline-args is true, then the remaining vargs are added to :args,
    otherwise they're inlined into the log-map."
   [log-map ?msg-fmt vargs inline-args?]
@@ -64,7 +64,7 @@
 
 (defn default-should-log-field-fn
   "Default function to determine whether to log fields.
-   
+
    Logs all fields except :file :line and :ns which are only logged on error."
   [field-name {:keys [?err] :as _data}]
   (if (contains? #{:file :line :ns} field-name)
@@ -83,7 +83,7 @@
       :async? false
       :min-level nil
       :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context] :as data}]
-            (let [;; apply context prior to resolving vargs so specific log values override context values  
+            (let [;; apply context prior to resolving vargs so specific log values override context values
                   base-log-map (cond
                                  (and (not inline-args?) (seq context)) {:args context}
                                  (and inline-args? (seq context)) context
