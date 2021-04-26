@@ -203,3 +203,16 @@
     (testing "test key for info"
       (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/warn "test"))))]
         (is (= "warn" (:severity log)))))))
+
+(deftest install
+  (testing "install custom should-log-field-fn"
+    (let [old-config timbre/*config*]
+      (try
+        (sut/install {:should-log-field-fn (fn [field-name _data]
+                                             ;; Excludes :thread field from log
+                                             (not= :thread field-name))})
+        (let [log (parse-string (with-out-str
+                                  (timbre/info "test")))]
+          (is (not (contains? log :thread))))
+        (finally
+          (timbre/set-config! old-config))))))

@@ -120,12 +120,13 @@
    (install :info))
   ([{:keys [level min-level pretty inline-args? level-key should-log-field-fn] :or {level-key :level
                                                                                     pretty false
-                                                                                    inline-args? true}}]
+                                                                                    inline-args? true
+                                                                                    should-log-field-fn default-should-log-field-fn}}]
    (timbre/set-config! {:min-level (or min-level level :info)
                         :appenders {:json (json-appender {:pretty pretty
                                                           :inline-args? inline-args?
                                                           :level-key level-key
-                                                          :default-should-log-field-fn should-log-field-fn})}})))
+                                                          :should-log-field-fn should-log-field-fn})}})))
 
 (defn log-success [request-method uri status]
   (timbre/info :method request-method :uri uri :status status))
