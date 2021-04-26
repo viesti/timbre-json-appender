@@ -87,7 +87,7 @@
                   base-log-map (cond
                                  (and (not inline-args?) (seq context)) {:args context}
                                  (and inline-args? (seq context)) context
-                                 :default {})
+                                 :else {})
                   log-map (-> (handle-vargs base-log-map
                                             ?msg-fmt
                                             vargs
