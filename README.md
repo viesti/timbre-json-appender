@@ -145,6 +145,10 @@ By default `tas/default-should-log-field-fn` is used. This only logs `:hostname`
 
 # Changelog
 
+2021-07-31 (0.2.2)
+
+- Make printing atomic
+
 2021-04-26 (0.2.1)
 
 - Allow to filter default fields via should-log-field-fn. Add hostname field.

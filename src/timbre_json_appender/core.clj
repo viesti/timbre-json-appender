@@ -71,6 +71,14 @@
     ?err
     true))
 
+(def system-newline (System/getProperty "line.separator"))
+
+;; Taken from timbre: https://github.com/ptaoussanis/timbre/commit/057b5a4c871752957e50c3eaf667c0517d56ca9a
+(defn- atomic-println
+  "println that prints the string and a newline atomically"
+  [x]
+  (print (str x system-newline)) (flush))
+
 (defn json-appender
   "Creates Timbre configuration map for JSON appender"
   ([]
@@ -103,7 +111,7 @@
                                (should-log-field-fn :hostname data) (assoc :hostname (force hostname_))
                                ?err (assoc :err (Throwable->map ?err))))]
               (try
-                (println (json/write-value-as-string log-map object-mapper))
+                (atomic-println (json/write-value-as-string log-map object-mapper))
                 (catch Throwable _
                   (fallback-logger data)))))})))
 
