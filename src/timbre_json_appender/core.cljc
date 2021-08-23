@@ -1,16 +1,19 @@
 (ns timbre-json-appender.core
-  (:require [jsonista.core :as json]
+  (:require #?(:clj [jsonista.core :as json])
+            #?(:cljs [goog.string :as gstring])
+            #?(:cljs [goog.string.format])
             [taoensso.timbre :as timbre])
-  (:import (com.fasterxml.jackson.databind SerializationFeature)))
+  #?(:clj (:import (com.fasterxml.jackson.databind SerializationFeature))))
 
-(set! *warn-on-reflection* true)
+#?(:clj (set! *warn-on-reflection* true))
 
-(defn object-mapper [opts]
-  (doto (json/object-mapper opts)
-    (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
+#?(:clj (defn object-mapper [opts]
+          (doto (json/object-mapper opts)
+            (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
+   :cljs (defn object-mapper [_] nil))
 
 (defn count-format-specifiers [^String format-string]
-  (let [len (.length format-string)]
+  (let [len (count format-string)]
     (loop [placeholders 0
            idx 0]
       (if (>= idx len)
@@ -54,7 +57,9 @@
   [log-map ?msg-fmt vargs inline-args?]
   (cond
     ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)
-                   log-map (assoc log-map :msg (String/format ?msg-fmt (to-array (take format-specifiers vargs))))]
+                   formatted-msg #?(:clj (String/format ?msg-fmt (to-array (take format-specifiers vargs)))
+                                    :cljs (apply gstring/format (cons ?msg-fmt (take format-specifiers vargs))))
+                   log-map (assoc log-map :msg formatted-msg)]
                (merge-log-map inline-args? log-map (apply hash-map (seq (drop format-specifiers vargs)))))
     :else (let [{:keys [message args]} (collect-vargs vargs)
                 log-map (if message
@@ -71,7 +76,7 @@
     ?err
     true))
 
-(def system-newline (System/getProperty "line.separator"))
+(def system-newline (with-out-str (newline)))
 
 ;; Taken from timbre: https://github.com/ptaoussanis/timbre/commit/057b5a4c871752957e50c3eaf667c0517d56ca9a
 (defn- atomic-println
@@ -104,15 +109,18 @@
                               (assoc :timestamp instant)
                               (assoc level-key level)
                               (cond->
-                               (should-log-field-fn :thread data) (assoc :thread (.getName (Thread/currentThread)))
+                               (should-log-field-fn :thread data) (assoc :thread #?(:clj (.getName (Thread/currentThread))
+                                                                                    :cljs nil))
                                (should-log-field-fn :file data) (assoc :file ?file)
                                (should-log-field-fn :line data) (assoc :line ?line)
                                (should-log-field-fn :ns data) (assoc :ns ?ns-str)
                                (should-log-field-fn :hostname data) (assoc :hostname (force hostname_))
-                               ?err (assoc :err (Throwable->map ?err))))]
+                               ?err (assoc :err #?(:clj (Throwable->map ?err)
+                                                   :cljs ?err))))]
               (try
-                (atomic-println (json/write-value-as-string log-map object-mapper))
-                (catch Throwable _
+                #?(:clj (atomic-println (json/write-value-as-string log-map object-mapper)))
+                #?(:cljs (atomic-println (js/JSON.stringify (clj->js log-map))))
+                (catch #?(:clj Throwable) #?(:cljs js/Error) _
                   (fallback-logger data)))))})))
 
 (defn install
@@ -152,7 +160,8 @@
        (let [{:keys [status] :as response} (handler request)]
          (log-success request-method uri status)
          response)
-       (catch Throwable t
+       (catch #?(:clj Throwable
+                 :cljs js/Error) t
          (log-failure t request-method uri)
          {:status 500
           :body "Server error"})))

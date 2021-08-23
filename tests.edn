@@ -1,1 +1,4 @@
-#kaocha/v1 {}
+#kaocha/v1
+{:tests [{:id         :unit}
+         {:id         :unit-cljs
+          :type       :kaocha.type/cljs}]}

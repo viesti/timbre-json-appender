@@ -1,8 +1,18 @@
-{:paths ["src"]
- :deps {metosin/jsonista {:mvn/version "0.3.1"}
-        com.taoensso/timbre {:mvn/version "5.1.2"}}
+{:paths ["src" "test"]
+ :deps {com.taoensso/timbre  {:mvn/version "5.1.2"}
+        metosin/jsonista     {:mvn/version "0.3.1"}
+        org.clojure/clojurescript   {:mvn/version "1.10.773"}}
  :aliases {:test {:extra-paths ["test"]
-                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.829"}}}
-           :pack {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
-                                                :sha "110ca11f853fa9dbb3f8eadba3c4176311bae4ac"}}
-                  :main-opts ["-m"]}}}
+                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.829"}
+                               com.lambdaisland/kaocha-cljs {:mvn/version "1.0.93"}}}
+           :pack {:extra-deps {pack/pack.alpha      {:git/url "https://github.com/juxt/pack.alpha.git"
+                                                     :sha "110ca11f853fa9dbb3f8eadba3c4176311bae4ac"}}
+                  :main-opts ["-m"]}
+           :repl/cljs-nrepl {:extra-deps {nrepl/nrepl                     {:mvn/version "0.8.3"}
+                                          cider/cider-nrepl               {:mvn/version "0.26.0"}
+                                          cider/piggieback                {:mvn/version "0.5.2"}}
+                             :main-opts  ["-m" "nrepl.cmdline"
+                                          "-i"
+                                          "--middleware" "[cider.nrepl/cider-middleware,cider.piggieback/wrap-cljs-repl]"]}}}
+
+

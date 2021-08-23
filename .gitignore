@@ -1,3 +1,9 @@
 .cpcache
 .nrepl-port
 target
+.idea
+*.iml
+.shadow-cljs
+.cljs_node_repl
+node_modules
+out
