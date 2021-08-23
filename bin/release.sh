@@ -10,8 +10,8 @@ GIT_HASH=$(git rev-parse HEAD)
 
 set -eux
 
-git tag $VERSION
-git push origin $VERSION
+#git tag $VERSION
+#git push origin $VERSION
 
 mkdir -p target
 
@@ -28,8 +28,8 @@ clojure -Srepro \
         mach.pack.alpha.skinny \
         --no-libs \
         --project-path target/timbre-json-appender.jar
-mvn deploy:deploy-file \
-    -Dfile=target/timbre-json-appender.jar \
-    -DrepositoryId=clojars \
-    -Durl=https://clojars.org/repo \
-    -DpomFile=target/pom.xml
+#mvn deploy:deploy-file \
+#    -Dfile=target/timbre-json-appender.jar \
+#    -DrepositoryId=clojars \
+#    -Durl=https://clojars.org/repo \
+#    -DpomFile=target/pom.xml

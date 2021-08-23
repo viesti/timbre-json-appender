@@ -1,16 +1,19 @@
 (ns timbre-json-appender.core-test
   (:require [clojure.test :refer [deftest is testing] :as t]
-            [timbre-json-appender.core :as sut]
-            [jsonista.core :as json]
-            [taoensso.timbre :as timbre]))
+            #?(:clj [jsonista.core :as json])
+            [taoensso.timbre :as timbre]
+            [timbre-json-appender.core :as sut]))
 
 (timbre/set-config! {:level :info
                      :appenders {:json (sut/json-appender)}})
 
-(def object-mapper (json/object-mapper {:decode-key-fn true}))
+#?(:clj (def object-mapper (json/object-mapper {:decode-key-fn true})))
 
 (defn parse-string [str]
-  (json/read-value str object-mapper))
+  #?(:clj (json/read-value str object-mapper))
+  #?(:cljs (-> str
+               js/JSON.parse
+               (js->clj :keywordize-keys true))))
 
 (deftest only-message
   (is (= "Hello" (:msg (parse-string (with-out-str (timbre/info "Hello")))))))
@@ -58,19 +61,21 @@
     (is (= {:duration 5
             :operation "123"} (-> log :args :some-context)))))
 
-(deftest unserializable-value
-  (testing "in a field"
-    (is (= {} (-> (parse-string (with-out-str (timbre/info :a (Object.))))
-                  :args
-                  :a))))
-  (testing "in ExceptionInfo"
-    (is (= {} (-> (parse-string (with-out-str (timbre/info (ex-info "poks" {:a (Object.)}))))
-                  :err
-                  :data
-                  :a)))))
+;Only applies to clojure, maybe?
+#?(:clj (deftest unserializable-value
+          (testing "in a field"
+            (is (= {} (-> (parse-string (with-out-str (timbre/info :a (Object.))))
+                          :args
+                          :a))))
+          (testing "in ExceptionInfo"
+            (is (= {} (-> (parse-string (with-out-str (timbre/info (ex-info "poks" {:a (Object.)}))))
+                          :err
+                          :data
+                          :a))))))
 
 (deftest exception
-  (is (= "poks" (-> (parse-string (with-out-str (timbre/info (Exception. "poks") "Error")))
+  (is (= "poks" (-> (parse-string (with-out-str (timbre/info #?(:clj (Exception. "poks")
+                                                                 :cljs (ex-info nil nil "poks")) "Error")))
                     :err
                     :cause))))
 
@@ -99,15 +104,16 @@
                  (timbre/with-context {:role "admin"}
                    (timbre/infof "%s %d%% ready" "Upload" 50 :role "developer"))))]
       (is (= {:role "developer"}
-             (:args log)))))
+             (:args log))))
 
-  (testing "does not override base fields"
-    (let [log (parse-string
-               (with-out-str
-                 (timbre/with-context {:thread "admin"}
-                   (timbre/infof "%s %d%% ready" "Upload" 50 :thread "developer"))))]
-      (is (= (.getName (Thread/currentThread))
-             (:thread log))))))
+    ;threading tests only apply in clojure as named threads dont exist natively in js
+   #?(:clj (testing "does not override base fields"
+             (let [log (parse-string
+                        (with-out-str
+                          (timbre/with-context {:thread "admin"}
+                            (timbre/infof "%s %d%% ready" "Upload" 50 :thread "developer"))))]
+               (is (= (.getName (Thread/currentThread))
+                      (:thread log))))))))
 
 (deftest inline-args
   (let [inline-args-config {:level :info
@@ -122,7 +128,7 @@
     (testing "with format"
       (let [log (parse-string (with-out-str
                                 (timbre/with-config inline-args-config
-                                  (timbre/infof "count: %d" 1 :a 1))))]
+                                  (timbre/infof "count: %1d" 1 :a 1))))]
         (is (= "count: 1" (:msg log)))
         (is (= 1 (:a log)))))
 
@@ -140,12 +146,13 @@
         (is (= 1 (:a log)))
         (is (= #{:timestamp :level :thread :hostname :a} (set (keys log))))))
 
-    (testing "does not overrride base fields"
-      (let [log (parse-string (with-out-str
-                                (timbre/with-config inline-args-config
-                                  (timbre/info :thread "some-thread"))))]
-        (is (= (.getName (Thread/currentThread))
-               (:thread log)))))
+    ;threading tests dont apply as named threads dont exist natively in js
+    #?(:clj (testing "does not overrride base fields"
+              (let [log (parse-string (with-out-str
+                                        (timbre/with-config inline-args-config
+                                          (timbre/info :thread "some-thread"))))]
+                (is (= (.getName (Thread/currentThread))
+                       (:thread log))))))
 
     (testing "with context"
       (let [log (parse-string (with-out-str
@@ -162,12 +169,13 @@
                                 (timbre/info "plop" :a 1))))]
       (is (= #{:args :msg :hostname :level :thread :timestamp} (set (keys log))))))
 
-  (testing "default function logs fields on errors"
-    (let [log (parse-string (with-out-str
-                              (timbre/with-config {:level :info
-                                                   :appenders {:json (sut/json-appender)}}
-                                (timbre/error (ex-info "poks" {:a (Object.)}) "plop" :a 1))))]
-      (is (= #{:args :msg :hostname :level :thread :timestamp :err :ns :file :line} (set (keys log))))))
+  ;only applicable to Clojure as JS objects are serializable
+  #?(:clj (testing "default function logs fields on errors"
+            (let [log (parse-string (with-out-str
+                                      (timbre/with-config {:level :info
+                                                           :appenders {:json (sut/json-appender)}}
+                                        (timbre/error (ex-info "poks" {:a (Object.)}) "plop" :a 1))))]
+              (is (= #{:args :msg :hostname :level :thread :timestamp :err :ns :file :line} (set (keys log)))))))
 
   (testing "does not support filtering level or timestamp"
     (let [log (parse-string (with-out-str

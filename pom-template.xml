@@ -7,7 +7,7 @@
   <artifactId>timbre-json-appender</artifactId>
   <version>VERSION</version>
   <name>timbre-json-appender</name>
-  <description>A structured log appender for Timbre using jsonista</description>
+  <description>A structured log appender for Timbre that is cljc compliant</description>
   <build>
     <sourceDirectory>src</sourceDirectory>
   </build>
