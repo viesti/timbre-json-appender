@@ -200,7 +200,7 @@
     (testing "test key for info"
       (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/info "test"))))]
         (is (= "info" (:severity log)))))
-    (testing "ntest key for info"
+    (testing "test key for info"
       (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/warn "test"))))]
         (is (= "warn" (:severity log)))))))
 
