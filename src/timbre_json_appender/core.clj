@@ -51,14 +51,14 @@
 
    If inline-args is true, then the remaining vargs are added to :args,
    otherwise they're inlined into the log-map."
-  [log-map ?msg-fmt vargs inline-args?]
+  [log-map ?msg-fmt vargs inline-args? msg-key]
   (cond
     ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)
-                   log-map (assoc log-map :msg (String/format ?msg-fmt (to-array (take format-specifiers vargs))))]
+                   log-map (assoc log-map msg-key (String/format ?msg-fmt (to-array (take format-specifiers vargs))))]
                (merge-log-map inline-args? log-map (apply hash-map (seq (drop format-specifiers vargs)))))
     :else (let [{:keys [message args]} (collect-vargs vargs)
                 log-map (if message
-                          (assoc log-map :msg message)
+                          (assoc log-map msg-key message)
                           log-map)]
             (merge-log-map inline-args? log-map args))))
 
@@ -83,7 +83,12 @@
   "Creates Timbre configuration map for JSON appender"
   ([]
    (json-appender {}))
-  ([{:keys [pretty inline-args? level-key should-log-field-fn] :or {pretty false inline-args? false level-key :level should-log-field-fn default-should-log-field-fn}}]
+  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn]
+     :or {pretty              false
+          inline-args?        false
+          level-key           :level
+          msg-key             :msg
+          should-log-field-fn default-should-log-field-fn}}]
    (let [object-mapper (object-mapper {:pretty pretty})
          println-appender (taoensso.timbre/println-appender)
          fallback-logger (:fn println-appender)]
@@ -99,7 +104,8 @@
                   log-map (-> (handle-vargs base-log-map
                                             ?msg-fmt
                                             vargs
-                                            inline-args?)
+                                            inline-args?
+                                            msg-key)
                               ;; apply base fields last to ensure they have precedent over context and vargs
                               (assoc :timestamp instant)
                               (assoc level-key level)
@@ -121,19 +127,23 @@
   `level`:        Timbre log level (deprecated, prefer min-level)
   `min-level`:    Timbre log level
   `level-key`:    The key to use for log-level
+  `msg-key`:      The key to use for the message (default :msg)
   `pretty`:       Pretty-print JSON
   `inline-args?`: Place arguments on top level, instead of placing behing `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to default-should-log-field-fn"
   ([]
    (install :info))
-  ([{:keys [level min-level pretty inline-args? level-key should-log-field-fn] :or {level-key :level
-                                                                                    pretty false
-                                                                                    inline-args? true
-                                                                                    should-log-field-fn default-should-log-field-fn}}]
+  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn]
+     :or {level-key           :level
+          pretty              false
+          inline-args?        true
+          msg-key             :msg
+          should-log-field-fn default-should-log-field-fn}}]
    (timbre/set-config! {:min-level (or min-level level :info)
-                        :appenders {:json (json-appender {:pretty pretty
-                                                          :inline-args? inline-args?
-                                                          :level-key level-key
+                        :appenders {:json (json-appender {:pretty              pretty
+                                                          :inline-args?        inline-args?
+                                                          :level-key           level-key
+                                                          :msg-key             msg-key
                                                           :should-log-field-fn should-log-field-fn})}})))
 
 (defn log-success [request-method uri status]
