@@ -132,6 +132,17 @@ user=> (timbre/info "test")
 {"timestamp":"2020-11-07T00:28:50Z","severity":"info","thread":"main","msg":"test"}
 ```
 
+If you need to emit the message to a key other than `msg`, you can supply the `msg-key` arg.
+
+```shell
+user=> (tas/install)
+user=> (timbre/info "test")
+{"timestamp":"2020-11-07T00:28:36Z","level":"info","thread":"main","msg":"test"}
+user=> (tas/install {:msg-key :message})
+user=> (timbre/info "test")
+{"timestamp":"2020-11-07T00:28:50Z","severity":"info","thread":"main","message":"test"}
+```
+
 Map can be passed as an argument, to merge data onto the log output map. This avoids the need to use keyword style to get data onto the top level output map:
 
 ```shell
@@ -144,6 +155,10 @@ If you wish to change the default fields: `:hostname :thread :ns :file :line` wh
 By default `tas/default-should-log-field-fn` is used. This only logs `:hostname` and `:thread` unless an error occurs, in which case `:ns`, `:file` and `:line` are also output.
 
 # Changelog
+
+2021-08-28 (0.2.3)
+
+- Allow to override msg-key (eg to support logz.io requiring a field named "message")
 
 2021-07-31 (0.2.2)
 

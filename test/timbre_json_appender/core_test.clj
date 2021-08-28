@@ -200,9 +200,18 @@
     (testing "test key for info"
       (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/info "test"))))]
         (is (= "info" (:severity log)))))
-    (testing "test key for info"
+    (testing "ntest key for info"
       (let [log (parse-string (with-out-str (timbre/with-config level-key-diff (timbre/warn "test"))))]
         (is (= "warn" (:severity log)))))))
+
+(deftest msg-key-changes
+  (let [msg-key-diff {:level     :info
+                      :appenders {:json (sut/json-appender {:msg-key :message})}}]
+    (testing "with different msg-key"
+      (let [log (parse-string (with-out-str (timbre/with-config msg-key-diff (timbre/info "test"))))]
+        (is (= "test" (:message log))))
+      (let [log (parse-string (with-out-str (timbre/with-config msg-key-diff (timbre/warn "test"))))]
+        (is (= "test" (:message log)))))))
 
 (deftest install
   (testing "install custom should-log-field-fn"
