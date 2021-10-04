@@ -62,6 +62,7 @@ user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
   }
 }
 
+;; Allow to deal with non-json-serializable data in ex-info, here replace with nil
 user> (tas/install {:ex-data-field-fn (fn [f] (when (instance? java.io.Serializable f) f))})
 
 user> (timbre/error (ex-info "Hello" {:user-id 1 :not-serial (java.lang.ClassLoader/getSystemClassLoader)}))
