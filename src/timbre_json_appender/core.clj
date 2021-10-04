@@ -73,10 +73,15 @@
     true))
 
 (defn default-ex-data-field-fn
-  "Default function to pre-process fields in data map. This default implementation simply passes the
-  field value through. A common use case might be to strip non-Serializable values from the data map.
+  "Default function to pre-process fields in ex-info data map. This default implementation simply passes the
+  field value through. A common use case might be to strip non-Serializable values from the ex-info data map.
   While exceptions with non-Serializable fields won't prevent logging, they will prevent successful
-  JSON parsing and will use the fallback logger. An ex-data-field-fn of `(fn [f] (when (instance? java.io.Serializable f) f))`
+  JSON parsing and will use the fallback logger.
+
+  An `:ex-data-field-fn` of
+  ```
+  (fn [f] (when (instance? java.io.Serializable f) f))
+  ```
   would replace the non-Serializable values with nils."
   [f]
   f)
@@ -152,7 +157,7 @@
   `pretty`:       Pretty-print JSON
   `inline-args?`: Place arguments on top level, instead of placing behind `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
-  `ex-data-field-fn`:    A function which pre-processes fields in the data map. Useful when map includes non-Serializable values.  Defaults to `default-ex-data-field-fn`"
+  `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`"
   ([]
    (install :info))
   ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
