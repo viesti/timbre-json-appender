@@ -167,7 +167,33 @@
                               (timbre/with-config {:level :info
                                                    :appenders {:json (sut/json-appender {:ex-data-field-fn #(when (number? %) %)})}}
                                 (timbre/info (ex-info "plop" {:user-id 1 :name "alice"})))))]
-      (is (= {:user-id 1 :name nil} (get-in log [:err :data]))))))
+      (is (= {:user-id 1 :name nil}
+             (get-in log [:err :data])))
+      (is (= "clojure.lang.ExceptionInfo"
+             (-> log :err :via first :type))
+          "Type of exception when ex-info is thrown")))
+  (testing "keep type of exception"
+    (let [log (parse-string (with-out-str
+                              (timbre/with-config {:level :info
+                                                   :appenders {:json (sut/json-appender {:ex-data-field-fn (fn [f] (when (instance? java.io.Serializable f) f))})}}
+                                (timbre/info (Exception. "boom")))))]
+      (is (= "java.lang.Exception"
+             (-> log :err :via first :type))
+          "Type of exception when exception that is not clojure.lang.ExceptionInfo is thrown")))
+  (testing "nested exceptions"
+    (let [log (parse-string (with-out-str
+                              (timbre/with-config {:level :info
+                                                   :appenders {:json (sut/json-appender {:ex-data-field-fn (fn [f]
+                                                                                                             (if (instance? java.io.Serializable f)
+                                                                                                               f
+                                                                                                               :non-json-serializable-exception-data))})}}
+                                (timbre/info (ex-info "boom1" {:object (Object.)} (Exception. "boom2"))))))]
+      (is (= "clojure.lang.ExceptionInfo"
+             (-> log :err :via first :type)))
+      (is (= "java.lang.Exception"
+             (-> log :err :via second :type)))
+      (is (= {:object "non-json-serializable-exception-data"}
+             (-> log :err :via first :data))))))
 
 (deftest should-log-field-fn
   (testing "default function omits fields on non-errors"
