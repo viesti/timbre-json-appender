@@ -76,7 +76,7 @@
   "Default function to pre-process fields in data map. This default implementation simply passes the
   field value through. A common use case might be to strip non-Serializable values from the data map.
   While exceptions with non-Serializable fields won't prevent logging, they will prevent successful
-  JSON parsing and will use the fallback logger. An ex-data-field-fn of `(fn [f] (when (instance? Serializable f) f))`
+  JSON parsing and will use the fallback logger. An ex-data-field-fn of `(fn [f] (when (instance? java.io.Serializable f) f))`
   would replace the non-Serializable values with nils."
   [f]
   f)
