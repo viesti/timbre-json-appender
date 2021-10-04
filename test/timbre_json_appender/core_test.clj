@@ -154,7 +154,7 @@
                                     (timbre/info :a 1)))))]
         (is (= 123 (:test-context log)))))))
 
-(deftest data-field-fn
+(deftest ex-data-field-fn
   (testing "default function passes all values as they are"
     (let [log (parse-string (with-out-str
                               (timbre/with-config {:level :info
@@ -165,7 +165,7 @@
   (testing "provided function processes values in data map"
     (let [log (parse-string (with-out-str
                               (timbre/with-config {:level :info
-                                                   :appenders {:json (sut/json-appender {:data-field-fn #(when (number? %) %)})}}
+                                                   :appenders {:json (sut/json-appender {:ex-data-field-fn #(when (number? %) %)})}}
                                 (timbre/info (ex-info "plop" {:user-id 1 :name "alice"})))))]
       (is (= {:user-id 1 :name nil} (get-in log [:err :data]))))))
 
