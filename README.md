@@ -61,6 +61,11 @@ user> (timbre/info "Hello" :user-id 1 :profile {:role :tester})
     }
   }
 }
+
+user> (tas/install {:ex-data-field-fn (fn [f] (when (instance? java.io.Serializable f) f))})
+
+user> (timbre/error (ex-info "Hello" {:user-id 1 :not-serial (java.lang.ClassLoader/getSystemClassLoader)}))
+{"timestamp": "2021-10-03T17:09:00Z", "level": "error" ... "cause": "Hello", "data": {"user-id": 1, "not-serial": null}}}
 ```
 
 Note the expected format:

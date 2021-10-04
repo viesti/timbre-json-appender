@@ -1,7 +1,8 @@
 (ns timbre-json-appender.core
   (:require [jsonista.core :as json]
             [taoensso.timbre :as timbre])
-  (:import (com.fasterxml.jackson.databind SerializationFeature)))
+  (:import (com.fasterxml.jackson.databind SerializationFeature)
+           (clojure.lang ExceptionInfo)))
 
 (set! *warn-on-reflection* true)
 
@@ -71,6 +72,15 @@
     ?err
     true))
 
+(defn default-ex-data-field-fn
+  "Default function to pre-process fields in data map. This default implementation simply passes the
+  field value through. A common use case might be to strip non-Serializable values from the data map.
+  While exceptions with non-Serializable fields won't prevent logging, they will prevent successful
+  JSON parsing and will use the fallback logger. An ex-data-field-fn of `(fn [f] (when (instance? Serializable f) f))`
+  would replace the non-Serializable values with nils."
+  [f]
+  f)
+
 (def system-newline (System/getProperty "line.separator"))
 
 ;; Taken from timbre: https://github.com/ptaoussanis/timbre/commit/057b5a4c871752957e50c3eaf667c0517d56ca9a
@@ -79,24 +89,35 @@
   [x]
   (print (str x system-newline)) (flush))
 
+(defn- process-ex-data-map [ex-data-field-fn ex]
+  (if (and ex (instance? ExceptionInfo ex))
+    (let [cause (process-ex-data-map ex-data-field-fn (ex-cause ex))]
+      (ex-info (ex-message ex)
+               (into {} (map (fn [[k v]] {k (ex-data-field-fn v)}) (ex-data ex)))
+               cause))
+    ex))
+
 (defn json-appender
   "Creates Timbre configuration map for JSON appender"
   ([]
    (json-appender {}))
-  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn]
+  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
      :or {pretty              false
           inline-args?        false
           level-key           :level
           msg-key             :msg
-          should-log-field-fn default-should-log-field-fn}}]
+          should-log-field-fn default-should-log-field-fn
+          ex-data-field-fn    default-ex-data-field-fn}}]
    (let [object-mapper (object-mapper {:pretty pretty})
          println-appender (taoensso.timbre/println-appender)
-         fallback-logger (:fn println-appender)]
+         fallback-logger (:fn println-appender)
+         data-field-processor (partial process-ex-data-map ex-data-field-fn)]
      {:enabled? true
       :async? false
       :min-level nil
       :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context] :as data}]
             (let [;; apply context prior to resolving vargs so specific log values override context values
+                  ?err (data-field-processor ?err)
                   base-log-map (cond
                                  (and (not inline-args?) (seq context)) {:args context}
                                  (and inline-args? (seq context)) context
@@ -129,22 +150,25 @@
   `level-key`:    The key to use for log-level
   `msg-key`:      The key to use for the message (default :msg)
   `pretty`:       Pretty-print JSON
-  `inline-args?`: Place arguments on top level, instead of placing behing `args` field
-  `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to default-should-log-field-fn"
+  `inline-args?`: Place arguments on top level, instead of placing behind `args` field
+  `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
+  `ex-data-field-fn`:    A function which pre-processes fields in the data map. Useful when map includes non-Serializable values.  Defaults to `default-ex-data-field-fn`"
   ([]
    (install :info))
-  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn]
+  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
      :or {level-key           :level
           pretty              false
           inline-args?        true
           msg-key             :msg
-          should-log-field-fn default-should-log-field-fn}}]
+          should-log-field-fn default-should-log-field-fn
+          ex-data-field-fn    default-ex-data-field-fn}}]
    (timbre/set-config! {:min-level (or min-level level :info)
                         :appenders {:json (json-appender {:pretty              pretty
                                                           :inline-args?        inline-args?
                                                           :level-key           level-key
                                                           :msg-key             msg-key
-                                                          :should-log-field-fn should-log-field-fn})}})))
+                                                          :should-log-field-fn should-log-field-fn
+                                                          :ex-data-field-fn    ex-data-field-fn})}})))
 
 (defn log-success [request-method uri status]
   (timbre/info :method request-method :uri uri :status status))
