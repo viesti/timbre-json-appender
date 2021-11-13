@@ -120,7 +120,7 @@
      {:enabled? true
       :async? false
       :min-level nil
-      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
+      :fn (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
             (let [;; apply context prior to resolving vargs so specific log values override context values
                   ?err (data-field-processor ?err)
                   base-log-map (cond
