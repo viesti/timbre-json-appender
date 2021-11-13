@@ -31,7 +31,7 @@
     (is (= 1 (:msg log)))
     (is (= 5 (-> log :args :duration)))))
 
-(deftest timestamp
+(deftest default-timestamp
   (let [log (parse-string (with-out-str (timbre/info 1 :duration 5)))]
     (is (re-find #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z" (:timestamp log)))))
 
