@@ -162,6 +162,9 @@ By default `tas/default-should-log-field-fn` is used. This only logs `:hostname`
 
 # Changelog
 
+2021-11-15 (0.2.5)
+- Respect :timestamp-opts to allow customizing timestamp format
+
 2021-10-04 (0.2.4)
 - Allow to process non-json-serializable data in ex-info data map (for example, discard `:http-client` in exceptions thrown by clj-http)
 
