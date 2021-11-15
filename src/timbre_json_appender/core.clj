@@ -120,7 +120,7 @@
      {:enabled? true
       :async? false
       :min-level nil
-      :fn (fn [{:keys [instant level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context] :as data}]
+      :fn (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
             (let [;; apply context prior to resolving vargs so specific log values override context values
                   ?err (data-field-processor ?err)
                   base-log-map (cond
@@ -133,15 +133,15 @@
                                             inline-args?
                                             msg-key)
                               ;; apply base fields last to ensure they have precedent over context and vargs
-                              (assoc :timestamp instant)
+                              (assoc :timestamp (force timestamp_))
                               (assoc level-key level)
                               (cond->
-                               (should-log-field-fn :thread data) (assoc :thread (.getName (Thread/currentThread)))
-                               (should-log-field-fn :file data) (assoc :file ?file)
-                               (should-log-field-fn :line data) (assoc :line ?line)
-                               (should-log-field-fn :ns data) (assoc :ns ?ns-str)
-                               (should-log-field-fn :hostname data) (assoc :hostname (force hostname_))
-                               ?err (assoc :err (Throwable->map ?err))))]
+                                  (should-log-field-fn :thread data) (assoc :thread (.getName (Thread/currentThread)))
+                                  (should-log-field-fn :file data) (assoc :file ?file)
+                                  (should-log-field-fn :line data) (assoc :line ?line)
+                                  (should-log-field-fn :ns data) (assoc :ns ?ns-str)
+                                  (should-log-field-fn :hostname data) (assoc :hostname (force hostname_))
+                                  ?err (assoc :err (Throwable->map ?err))))]
               (try
                 (atomic-println (json/write-value-as-string log-map object-mapper))
                 (catch Throwable _
@@ -173,7 +173,8 @@
                                                           :level-key           level-key
                                                           :msg-key             msg-key
                                                           :should-log-field-fn should-log-field-fn
-                                                          :ex-data-field-fn    ex-data-field-fn})}})))
+                                                          :ex-data-field-fn    ex-data-field-fn})}
+                        :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}})))
 
 (defn log-success [request-method uri status]
   (timbre/info :method request-method :uri uri :status status))

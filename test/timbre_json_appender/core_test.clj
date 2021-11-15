@@ -5,7 +5,8 @@
             [taoensso.timbre :as timbre]))
 
 (timbre/set-config! {:level :info
-                     :appenders {:json (sut/json-appender)}})
+                     :appenders {:json (sut/json-appender)}
+                     :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}})
 
 (def object-mapper (json/object-mapper {:decode-key-fn true}))
 
@@ -29,6 +30,19 @@
   (let [log (parse-string (with-out-str (timbre/info 1 :duration 5)))]
     (is (= 1 (:msg log)))
     (is (= 5 (-> log :args :duration)))))
+
+(deftest default-timestamp
+  (let [log (parse-string (with-out-str (timbre/info 1 :duration 5)))]
+    (is (re-find #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z" (:timestamp log)))))
+
+(deftest changing-timestamp-pattern
+  (let [old-config timbre/*config*]
+    (try
+      (timbre/merge-config! {:timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ss.SSSX"}})
+      (let [log (parse-string (with-out-str (timbre/info 1 :duration 5)))]
+        (is (re-find #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z" (:timestamp log))))
+      (finally
+        (timbre/set-config! old-config)))))
 
 (deftest message-and-map
   (let [log (parse-string (with-out-str (timbre/info "Task done" {:duration 5
