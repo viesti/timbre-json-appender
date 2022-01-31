@@ -102,10 +102,10 @@
                cause))
     ex))
 
-(defn json-appender
-  "Creates Timbre configuration map for JSON appender"
+(defn make-json-output-fn
+  "Creates a Timbre output-fn that prints JSON strings"
   ([]
-   (json-appender {}))
+   (make-json-output-fn {}))
   ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
      :or {pretty              false
           inline-args?        false
@@ -114,38 +114,45 @@
           should-log-field-fn default-should-log-field-fn
           ex-data-field-fn    default-ex-data-field-fn}}]
    (let [object-mapper (object-mapper {:pretty pretty})
-         println-appender (taoensso.timbre/println-appender)
-         fallback-logger (:fn println-appender)
          data-field-processor (partial process-ex-data-map ex-data-field-fn)]
-     {:enabled? true
-      :async? false
-      :min-level nil
-      :fn (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
-            (let [;; apply context prior to resolving vargs so specific log values override context values
-                  ?err (data-field-processor ?err)
-                  base-log-map (cond
-                                 (and (not inline-args?) (seq context)) {:args context}
-                                 (and inline-args? (seq context)) context
-                                 :else {})
-                  log-map (-> (handle-vargs base-log-map
-                                            ?msg-fmt
-                                            vargs
-                                            inline-args?
-                                            msg-key)
-                              ;; apply base fields last to ensure they have precedent over context and vargs
-                              (assoc :timestamp (force timestamp_))
-                              (assoc level-key level)
-                              (cond->
-                                  (should-log-field-fn :thread data) (assoc :thread (.getName (Thread/currentThread)))
-                                  (should-log-field-fn :file data) (assoc :file ?file)
-                                  (should-log-field-fn :line data) (assoc :line ?line)
-                                  (should-log-field-fn :ns data) (assoc :ns ?ns-str)
-                                  (should-log-field-fn :hostname data) (assoc :hostname (force hostname_))
-                                  ?err (assoc :err (Throwable->map ?err))))]
-              (try
-                (atomic-println (json/write-value-as-string log-map object-mapper))
-                (catch Throwable _
-                  (fallback-logger data)))))})))
+     (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
+       (let [;; apply context prior to resolving vargs so specific log values override context values
+             ?err (data-field-processor ?err)
+             base-log-map (cond
+                            (and (not inline-args?) (seq context)) {:args context}
+                            (and inline-args? (seq context)) context
+                            :else {})
+             log-map (-> (handle-vargs base-log-map
+                                       ?msg-fmt
+                                       vargs
+                                       inline-args?
+                                       msg-key)
+                         ;; apply base fields last to ensure they have precedent over context and vargs
+                         (assoc :timestamp (force timestamp_))
+                         (assoc level-key level)
+                         (cond->
+                             (should-log-field-fn :thread data) (assoc :thread (.getName (Thread/currentThread)))
+                             (should-log-field-fn :file data) (assoc :file ?file)
+                             (should-log-field-fn :line data) (assoc :line ?line)
+                             (should-log-field-fn :ns data) (assoc :ns ?ns-str)
+                             (should-log-field-fn :hostname data) (assoc :hostname (force hostname_))
+                             ?err (assoc :err (Throwable->map ?err))))]
+         (try
+           (json/write-value-as-string log-map object-mapper)
+           (catch Throwable _t
+             (timbre/default-output-fn data))))))))
+
+(defn json-appender
+  "Creates Timbre configuration map for JSON appender that prints to STDOUT"
+  ([]
+   (json-appender {}))
+  ([config]
+   {:enabled? true
+    :async? false
+    :min-level nil
+    :output-fn (make-json-output-fn config)
+    :fn (fn [{:keys [output_]}]
+          (atomic-println (force output_)))}))
 
 (defn install
   "Installs json-appender as the sole appender for Timbre, options
