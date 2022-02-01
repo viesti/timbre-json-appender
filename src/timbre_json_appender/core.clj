@@ -103,7 +103,15 @@
     ex))
 
 (defn make-json-output-fn
-  "Creates a Timbre output-fn that prints JSON strings"
+  "Creates a Timbre output-fn that prints JSON strings.
+  Takes the following options:
+
+  `level-key`:    The key to use for log-level
+  `msg-key`:      The key to use for the message (default :msg)
+  `pretty`:       Pretty-print JSON
+  `inline-args?`: Place arguments on top level, instead of placing behind `args` field
+  `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
+  `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`"
   ([]
    (make-json-output-fn {}))
   ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
