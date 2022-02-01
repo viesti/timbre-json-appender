@@ -160,6 +160,51 @@ user=> (timbre/info "Hello" {:user-id 1})
 If you wish to change the default fields: `:hostname :thread :ns :file :line` which are logged a function: `:should-log-field-fn` with the signature `(field-name, timbre-data) -> boolean` can be provided which should return a boolean indicating whether to log the field.
 By default `tas/default-should-log-field-fn` is used. This only logs `:hostname` and `:thread` unless an error occurs, in which case `:ns`, `:file` and `:line` are also output.
 
+### output-fn
+
+You can now also use `make-json-output-fn` to create a output-fn, for use with other Timbre appenders:
+
+```
+user> (require '[timbre-json-appender.core :as tas])
+nil
+user> (require '[taoensso.timbre :as timbre])
+nil
+user> (timbre/set-config! {:level :info
+                           :output-fn (tas/make-json-output-fn)
+                           :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}
+                           :appenders {:println (timbre/println-appender)}})
+{:level :info,
+ :output-fn #function[timbre-json-appender.core/make-json-output-fn/fn--31957],
+ :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"},
+ :appenders
+ {:println
+  {:enabled? true,
+   :async? false,
+   :min-level nil,
+   :rate-limit nil,
+   :output-fn :inherit,
+   :fn #function[taoensso.timbre.appenders.core/println-appender/fn--14146]}}}
+user> (timbre/info "test")
+{"msg":"test","args":{},"timestamp":"2022-02-01T19:36:15Z","level":"info","thread":"nREPL-session-97feefd2-b073-4fdd-93a2-f63496d63e69","hostname":"paju.local"}
+nil
+```
+
+`make-json-output-fn` takes the same options as `install`.
+
+
+The key names in the resulting log map can be configured with `:key-names` option:
+
+```
+user> (timbre/set-config! {:level :info
+                           :output-fn (tas/make-json-output-fn {:key-names {:timestamp "@timestamp"
+                                                                            :thread "@thread_name"}})
+                           :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}
+                           :appenders {:println (timbre/println-appender)}})
+user> (timbre/info "test")
+{"msg":"test","args":{},"@timestamp":"2022-02-01T19:37:56Z","level":"info","@thread_name":"nREPL-session-97feefd2-b073-4fdd-93a2-f63496d63e69","hostname":"paju.local"}
+nil
+```
+
 # Changelog
 
 2021-11-15 (0.2.5)

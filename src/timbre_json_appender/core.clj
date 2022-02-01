@@ -6,6 +6,18 @@
 
 (set! *warn-on-reflection* true)
 
+(def default-key-names
+  "Default key names in the log map"
+  {:timestamp :timestamp
+   :level :level
+   :thread :thread
+   :hostname :hostname
+   :msg :msg
+   :ns :ns
+   :err :err
+   :file :file
+   :line :line})
+
 (defn object-mapper [opts]
   (doto (json/object-mapper opts)
     (.configure SerializationFeature/FAIL_ON_EMPTY_BEANS false)))
@@ -111,17 +123,22 @@
   `pretty`:       Pretty-print JSON
   `inline-args?`: Place arguments on top level, instead of placing behind `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
-  `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`"
+  `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`
+  `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
   ([]
    (make-json-output-fn {}))
-  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
+  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
      :or {pretty              false
           inline-args?        false
-          level-key           :level
-          msg-key             :msg
           should-log-field-fn default-should-log-field-fn
-          ex-data-field-fn    default-ex-data-field-fn}}]
-   (let [object-mapper (object-mapper {:pretty pretty})
+          ex-data-field-fn    default-ex-data-field-fn
+          key-names           default-key-names}}]
+   (let [key-names (merge default-key-names key-names)
+         msg-key (or msg-key
+                     (get key-names :msg))
+         level-key (or level-key
+                       (get key-names :level))
+         object-mapper (object-mapper {:pretty pretty})
          data-field-processor (partial process-ex-data-map ex-data-field-fn)]
      (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
        (let [;; apply context prior to resolving vargs so specific log values override context values
@@ -136,15 +153,15 @@
                                        inline-args?
                                        msg-key)
                          ;; apply base fields last to ensure they have precedent over context and vargs
-                         (assoc :timestamp (force timestamp_))
+                         (assoc (get key-names :timestamp) (force timestamp_))
                          (assoc level-key level)
                          (cond->
-                             (should-log-field-fn :thread data) (assoc :thread (.getName (Thread/currentThread)))
-                             (should-log-field-fn :file data) (assoc :file ?file)
-                             (should-log-field-fn :line data) (assoc :line ?line)
-                             (should-log-field-fn :ns data) (assoc :ns ?ns-str)
-                             (should-log-field-fn :hostname data) (assoc :hostname (force hostname_))
-                             ?err (assoc :err (Throwable->map ?err))))]
+                             (should-log-field-fn :thread data) (assoc (get key-names :thread) (.getName (Thread/currentThread)))
+                             (should-log-field-fn :file data) (assoc (get key-names :file) ?file)
+                             (should-log-field-fn :line data) (assoc (get key-names :line) ?line)
+                             (should-log-field-fn :ns data) (assoc (get key-names :ns) ?ns-str)
+                             (should-log-field-fn :hostname data) (assoc (get key-names :hostname) (force hostname_))
+                             ?err (assoc (get key-names :err) (Throwable->map ?err))))]
          (try
            (json/write-value-as-string log-map object-mapper)
            (catch Throwable _t
@@ -172,7 +189,8 @@
   `pretty`:       Pretty-print JSON
   `inline-args?`: Place arguments on top level, instead of placing behind `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
-  `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`"
+  `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`
+  `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
   ([]
    (install :info))
   ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
