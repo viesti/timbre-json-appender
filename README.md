@@ -4,8 +4,7 @@
 
 A structured log appender for [Timbre](https://github.com/ptaoussanis/timbre) using [jsonista](https://github.com/metosin/jsonista).
 
-Makes extracting data from logs easier in for example [AWS CloudWatch
-Logs](https://aws.amazon.com/about-aws/whats-new/2015/01/20/amazon-cloudwatch-logs-json-log-format-support/) and [GCP Stackdriver Logging](https://cloud.google.com/logging/).
+Makes extracting data from logs easier in for example [AWS CloudWatch Logs](https://aws.amazon.com/about-aws/whats-new/2015/01/20/amazon-cloudwatch-logs-json-log-format-support/) and [GCP Stackdriver Logging](https://cloud.google.com/logging/).
 
 A Timbre log invocation maps to JSON messages the following way:
 
@@ -69,6 +68,8 @@ user> (timbre/error (ex-info "Hello" {:user-id 1 :not-serial (java.lang.ClassLoa
 {"timestamp": "2021-10-03T17:09:00Z", "level": "error" ... "cause": "Hello", "data": {"user-id": 1, "not-serial": null}}}
 ```
 
+### Format of the log invocation
+
 Note the expected format:
 
 -   An (optional) leading message is used as the as `msg` key
@@ -114,8 +115,9 @@ user> (timbre/info "Hello" :role :admin)
 nil
 ```
 
-If you use Timbre's [`with-context`](http://ptaoussanis.github.io/timbre/taoensso.timbre.html#var-with-context),
-it will be added to your output automatically (and respects inline-args settings too)
+### Logging context
+
+If you use Timbre's [`with-context`](http://ptaoussanis.github.io/timbre/taoensso.timbre.html#var-with-context), it will be added to your output automatically (and respects inline-args settings too)
 
 ```shell
 user=> (tas/install)
@@ -126,6 +128,22 @@ user=> (timbre/with-context {:important-context "goes-here" :and :here} (timbre/
 {"timestamp":"2020-11-03T11:25:14Z","level":"info","thread":"main","msg":"test","args":{"important-context":"goes-here","and":"here"}}
 
 ```
+
+### Naming keys in the log output
+
+The key names in the resulting log map can be configured with `:key-names` option:
+
+```
+user> (tas/install {:key-names {:timestamp "@timestamp"
+                                :thread "@thread_name"}})
+user> (timbre/info "test")
+{"msg":"test","@timestamp":"2022-02-08T18:28:16Z","level":"info","@thread_name":"nREPL-session-42cb6250-ab2d-4bf5-9e16-6a6293a66357","hostname":"paju.local"}
+nil
+```
+
+Default key names are found in `timbre-json-appender.core/default-key-names`.
+
+Additionally, before version 0.2.6, `level`and `msg` keys can be configured separately (these options are kept for backward compatibility).
 
 If you need to emit the log-level to a key other than `level`, you can supply the `level-key` arg
 
@@ -149,6 +167,8 @@ user=> (timbre/info "test")
 {"timestamp":"2020-11-07T00:28:50Z","severity":"info","thread":"main","message":"test"}
 ```
 
+### Maps as log data
+
 Map can be passed as an argument, to merge data onto the log output map. This avoids the need to use keyword style to get data onto the top level output map:
 
 ```shell
@@ -160,12 +180,54 @@ user=> (timbre/info "Hello" {:user-id 1})
 If you wish to change the default fields: `:hostname :thread :ns :file :line` which are logged a function: `:should-log-field-fn` with the signature `(field-name, timbre-data) -> boolean` can be provided which should return a boolean indicating whether to log the field.
 By default `tas/default-should-log-field-fn` is used. This only logs `:hostname` and `:thread` unless an error occurs, in which case `:ns`, `:file` and `:line` are also output.
 
+### Support output-fn
+
+You can now also use `make-json-output-fn` to create a output-fn, for use with other Timbre appenders:
+
+```clojure
+user> (require '[timbre-json-appender.core :as tas])
+nil
+user> (require '[taoensso.timbre :as timbre])
+nil
+user> (require '[taoensso.timbre.appenders.3rd-party.rolling :refer [rolling-appender]])
+nil
+user> (timbre/set-config! {:level :info
+                           :output-fn (tas/make-json-output-fn)
+                           :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}
+                           :appenders {:rolling (rolling-appender {:path "rolling.log"})}})
+{:level :info,
+ :output-fn #function[timbre-json-appender.core/make-json-output-fn/fn--31957],
+ :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"},
+ :appenders
+ {:rolling
+  {:enabled? true,
+   :async? false,
+   :min-level nil,
+   :rate-limit nil,
+   :output-fn :inherit,
+   :fn #function[taoensso.timbre.appenders.3rd-party.rolling/rolling-appender/fn--32903]}}}
+user> (timbre/info "test")
+nil
+user> (println (slurp "rolling.log"))
+{"msg":"test","timestamp":"2022-02-08T18:36:36Z","level":"info","thread":"nREPL-session-42cb6250-ab2d-4bf5-9e16-6a6293a66357","hostname":"paju.local"}
+nil
+```
+
+`make-json-output-fn` takes the same options as `install`.
+
 # Changelog
 
+2022-02-08 (0.2.6)
+
+* Support `:output-fn`, which allows use with other appenders
+* Support renaming keys in the JSON log output with `:key-names`
+
 2021-11-15 (0.2.5)
-- Respect :timestamp-opts to allow customizing timestamp format
+
+- Respect `:timestamp-opts` to allow customizing timestamp format
 
 2021-10-04 (0.2.4)
+
 - Allow to process non-json-serializable data in ex-info data map (for example, discard `:http-client` in exceptions thrown by clj-http)
 
 2021-08-28 (0.2.3)

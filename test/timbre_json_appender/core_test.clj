@@ -268,6 +268,20 @@
       (let [log (parse-string (with-out-str (timbre/with-config msg-key-diff (timbre/warn "test"))))]
         (is (= "test" (:message log)))))))
 
+(deftest output-fn
+  (let [log (parse-string (timbre/with-config (assoc timbre/default-config
+                                                     :output-fn (sut/make-json-output-fn))
+                            (with-out-str (timbre/info "test"))))]
+    (is (= "test" (:msg log)))))
+
+(deftest key-names
+  (let [log (json/read-value (timbre/with-config (assoc timbre/default-config
+                                                        :output-fn (sut/make-json-output-fn {:key-names {:msg "@message"
+                                                                                                         :thread "@thread_name"}}))
+                               (with-out-str (timbre/info "test"))))]
+    (is (= "test" (get log "@message")))
+    (is (contains? (set (keys log)) "@thread_name"))))
+
 (deftest install
   (testing "install custom should-log-field-fn"
     (let [old-config timbre/*config*]
