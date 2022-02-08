@@ -217,7 +217,13 @@ nil
 
 # Changelog
 
+2022-02-08 (0.2.6)
+
+* Support `:output-fn`, which allows use with other appenders
+* Support renaming keys in the JSON log output with `:key-names`
+
 2021-11-15 (0.2.5)
+
 - Respect `:timestamp-opts` to allow customizing timestamp format
 
 2021-10-04 (0.2.4)
