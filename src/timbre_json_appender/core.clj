@@ -197,20 +197,22 @@
   `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
   ([]
    (install :info))
-  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn]
+  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
      :or {level-key           :level
           pretty              false
           inline-args?        true
           msg-key             :msg
           should-log-field-fn default-should-log-field-fn
-          ex-data-field-fn    default-ex-data-field-fn}}]
+          ex-data-field-fn    default-ex-data-field-fn
+          key-names           default-key-names}}]
    (timbre/set-config! {:min-level (or min-level level :info)
                         :appenders {:json (json-appender {:pretty              pretty
                                                           :inline-args?        inline-args?
                                                           :level-key           level-key
                                                           :msg-key             msg-key
                                                           :should-log-field-fn should-log-field-fn
-                                                          :ex-data-field-fn    ex-data-field-fn})}
+                                                          :ex-data-field-fn    ex-data-field-fn
+                                                          :key-names           key-names})}
                         :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}})))
 
 (defn log-success [request-method uri status]
