@@ -129,7 +129,7 @@
    (make-json-output-fn {}))
   ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
      :or {pretty              false
-          inline-args?        false
+          inline-args?        true
           should-log-field-fn default-should-log-field-fn
           ex-data-field-fn    default-ex-data-field-fn
           key-names           default-key-names}}]
@@ -171,11 +171,15 @@
   "Creates Timbre configuration map for JSON appender that prints to STDOUT"
   ([]
    (json-appender {}))
-  ([config]
+  ([{:keys [inline-args?]
+     :or {inline-args? false}
+     :as config}]
    {:enabled? true
     :async? false
     :min-level nil
-    :output-fn (make-json-output-fn config)
+    :output-fn (make-json-output-fn (assoc config
+                                           ;; Legacy support, inline-args? defaulted to `true` in `install`, but false in `json-appender`
+                                           :inline-args? inline-args?))
     :fn (fn [{:keys [output_]}]
           (atomic-println (force output_)))}))
 
