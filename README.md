@@ -217,6 +217,9 @@ nil
 
 # Changelog
 
+2022-06-25 (0.2.7)
+* Bump jsonista due to CVE-2020-36518
+
 2022-02-08 (0.2.6)
 
 * Support `:output-fn`, which allows use with other appenders
