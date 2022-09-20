@@ -108,10 +108,12 @@
 
 (defn- process-ex-data-map [ex-data-field-fn ex]
   (if (and ex (instance? ExceptionInfo ex))
-    (let [cause (process-ex-data-map ex-data-field-fn (ex-cause ex))]
-      (ex-info (ex-message ex)
-               (into {} (map (fn [[k v]] {k (ex-data-field-fn v)}) (ex-data ex)))
-               cause))
+    (let [cause (process-ex-data-map ex-data-field-fn (ex-cause ex))
+          new-ex (ex-info (ex-message ex)
+                          (into {} (map (fn [[k v]] {k (ex-data-field-fn v)}) (ex-data ex)))
+                          cause)]
+      (.setStackTrace ^ExceptionInfo new-ex (.getStackTrace ^ExceptionInfo ex))
+      new-ex)
     ex))
 
 (defn make-json-output-fn
@@ -139,7 +141,7 @@
          level-key (or level-key
                        (get key-names :level))
          object-mapper (object-mapper {:pretty pretty})
-         data-field-processor (partial process-ex-data-map ex-data-field-fn)]
+         data-field-processor (partial #'process-ex-data-map ex-data-field-fn)]
      (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
        (let [;; apply context prior to resolving vargs so specific log values override context values
              ?err (data-field-processor ?err)

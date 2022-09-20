@@ -1,5 +1,6 @@
 (ns timbre-json-appender.core-test
-  (:require [clojure.test :refer [deftest is testing] :as t]
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is testing] :as t]
             [timbre-json-appender.core :as sut]
             [jsonista.core :as json]
             [taoensso.timbre :as timbre]))
@@ -87,6 +88,22 @@
   (is (= "poks" (-> (parse-string (with-out-str (timbre/info (Exception. "poks") "Error")))
                     :err
                     :cause))))
+
+(deftest exception-stacktrace
+  (is (-> (parse-string (with-out-str (timbre/info (Exception. "poks") "Error")))
+          :err
+          :via
+          first
+          :at
+          first
+          (str/starts-with? "timbre_json_appender.core_test")))
+  (is (-> (parse-string (with-out-str (timbre/info (ex-info "poks" {}) "Error")))
+          :err
+          :via
+          first
+          :at
+          first
+          (str/starts-with? "timbre_json_appender.core_test"))))
 
 (deftest format-string
   (is (= "Hello World!" (-> (parse-string (with-out-str (timbre/infof "Hello %s!" "World")))
