@@ -4,5 +4,5 @@
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
            :pack {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
-                                                :sha "9ae4f8ff34427d0549fd5c58c0353e54523b3dfa"}}
+                                                :sha "110ca11f853fa9dbb3f8eadba3c4176311bae4ac"}}
                   :main-opts ["-m"]}}}
