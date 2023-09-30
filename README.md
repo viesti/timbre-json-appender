@@ -217,6 +217,10 @@ nil
 
 # Changelog
 
+2023-09-29 (0.2.9)
+
+- Bump jsonista due to CVE-2022-42003
+
 2022-09-21 (0.2.8)
 * Keep original stack trace of ExceptionInfo
   * While making sure the data of an ExceptionInfo is serializable, we re-create the ExceptionInfo instance. Now the original stack trace is also set to the newly created ExceptionInfo.

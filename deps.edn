@@ -1,8 +1,8 @@
 {:paths ["src"]
- :deps {metosin/jsonista {:mvn/version "0.3.6"}
-        com.taoensso/timbre {:mvn/version "5.1.2"}}
+ :deps {metosin/jsonista {:mvn/version "0.3.8"}
+        com.taoensso/timbre {:mvn/version "6.3.1"}}
  :aliases {:test {:extra-paths ["test"]
-                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.829"}}}
+                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
            :pack {:extra-deps {pack/pack.alpha {:git/url "https://github.com/juxt/pack.alpha.git"
-                                                :sha "110ca11f853fa9dbb3f8eadba3c4176311bae4ac"}}
+                                                :sha "9ae4f8ff34427d0549fd5c58c0353e54523b3dfa"}}
                   :main-opts ["-m"]}}}
