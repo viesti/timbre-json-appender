@@ -23,4 +23,10 @@
     <tag>GIT_HASH</tag>
     <url>https://github.com/viesti/timbre-json-appender</url>
   </scm>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://github.com/viesti/timbre-json-appender/blob/master/LICENSE</url>
+    </license>
+  </licenses>
 </project>
