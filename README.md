@@ -217,6 +217,10 @@ nil
 
 # Changelog
 
+2023-09-30 (0.2.10)
+
+- Same as previous, but fixed pom.xml dependency metadata (had broken clj installation on the deploy machine)
+
 2023-09-29 (0.2.9)
 
 - Bump jsonista due to CVE-2022-42003
