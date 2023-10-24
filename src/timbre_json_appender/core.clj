@@ -198,7 +198,7 @@
   `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`
   `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
   ([]
-   (install :info))
+   (install nil))
   ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
      :or {level-key           :level
           pretty              false
