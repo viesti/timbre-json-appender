@@ -67,8 +67,14 @@
   [log-map ?msg-fmt vargs inline-args? msg-key]
   (cond
     ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)
-                   log-map (assoc log-map msg-key (String/format ?msg-fmt (to-array (take format-specifiers vargs))))]
-               (merge-log-map inline-args? log-map (apply hash-map (seq (drop format-specifiers vargs)))))
+                   [message vargs] (split-at format-specifiers vargs)
+                   message (String/format ?msg-fmt (to-array message))
+                   args (if (and (= 1 (count vargs))
+                                 (map? (first vargs)))
+                          (first vargs)
+                          (apply hash-map vargs))
+                   log-map (assoc log-map msg-key message)]
+               (merge-log-map inline-args? log-map args))
     :else (let [{:keys [message args]} (collect-vargs vargs)
                 log-map (if message
                           (assoc log-map msg-key message)

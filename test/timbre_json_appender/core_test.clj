@@ -112,6 +112,9 @@
     (is (=  "Upload 50% ready"
             (:msg log)))
     (is (= {:role "admin"}
+           (:args log))))
+  (let [log (parse-string (with-out-str (timbre/infof "%s %d%% ready" "Upload" 50 {:role "admin"})))]
+    (is (= {:role "admin"}
            (:args log)))))
 
 (deftest context-item
@@ -138,7 +141,15 @@
                  (timbre/with-context {:thread "admin"}
                    (timbre/infof "%s %d%% ready" "Upload" 50 :thread "developer"))))]
       (is (= (.getName (Thread/currentThread))
-             (:thread log))))))
+             (:thread log)))))
+
+  (testing "merges context with trailing map"
+    (let [log (parse-string
+               (with-out-str
+                 (timbre/with-context {:role "admin"}
+                   (timbre/infof "%s %d%% ready" "Upload" 50 {:role "developer"}))))]
+      (is (= {:role "developer"}
+             (:args log))))))
 
 (deftest inline-args
   (let [inline-args-config {:level :info
