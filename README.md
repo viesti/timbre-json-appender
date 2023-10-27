@@ -217,6 +217,11 @@ nil
 
 # Changelog
 
+2023-10-27 (0.2.11)
+
+- Fix the defunct argument used in the single-argument (install) call.
+- Support trailing map in a format logging call
+
 2023-09-30 (0.2.10)
 
 - Same as previous, but fixed pom.xml dependency metadata (had broken clj installation on the deploy machine)
