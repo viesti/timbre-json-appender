@@ -321,4 +321,32 @@
                                   (timbre/info "test")))]
           (is (not (contains? log :thread))))
         (finally
+          (timbre/set-config! old-config)))))
+
+  (testing "key-names should be used level and msg key when passed in and level-key and msg-key should override them"
+    (let [old-config timbre/*config*]
+      (try
+        (sut/install {:should-log-field-fn (fn [field-name _data]
+                                             ;; Excludes :thread field from log
+                                             (not= :thread field-name))
+                      :key-names {:msg "some-msg-key"
+                                  :level "some-level-key"}})
+        (let [log (parse-string (with-out-str
+                                  (timbre/info "test")))]
+          (is (contains? log :some-msg-key))
+          (is (contains? log :some-level-key))
+          (is (not (contains? log :thread))))
+        (sut/install {:msg-key "msg-key-overridden"
+                      :level-key "level-key-overridden"
+                      :key-names {:msg "some-msg-key"
+                                  :level "some-level-key"}})
+        (let [log (parse-string (with-out-str
+                                  (timbre/info "test")))]
+          [(is (contains? log :msg-key-overridden))
+           (is (contains? log :level-key-overridden))
+           (is (not (contains? log :some-msg-key)))
+           (is (not (contains? log :some-level-key)))])
+        (finally
           (timbre/set-config! old-config))))))
+
+;; TODO: add tests for coolect-vargs
