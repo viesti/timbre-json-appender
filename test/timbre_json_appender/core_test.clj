@@ -271,6 +271,25 @@
                                   (timbre/info "plop" :a 1))))]
         (is (nil? (get log field-filter)))))))
 
+(defn final-map-as-args
+  [vargs]
+  (let [[message [args]] (split-at (dec (count vargs)) vargs)]
+    (if (map? args)
+      {:message (str/join " " message)
+       :args args}
+      {:message (str/join " " vargs)})))
+
+(deftest collect-vargs-fn
+  (testing "custom collect-vargs fn"
+    (let [log (parse-string (with-out-str
+                              (timbre/with-config {:level :info
+                                                   :appenders {:json (sut/json-appender {:collect-vargs-fn final-map-as-args})}}
+                                (timbre/info  :status 200 :duration 5 {:status 300 :duration 10}))))]
+      (is (= ":status 200 :duration 5" (:msg log)))
+      (is (= nil (:status log)))
+      (is (= nil (:duration log)))
+      (is (= {:status 300 :duration 10} (:args log))))))
+
 (deftest level-key-changes
   (let [level-key-diff {:level :info :appenders {:json (sut/json-appender {})}}]
     (testing "test key for info"
@@ -323,7 +342,7 @@
         (finally
           (timbre/set-config! old-config)))))
 
-  (testing "key-names should be used level and msg key when passed in and level-key and msg-key should override them"
+  (testing "key-names should be using level and msg key when passed in and level-key and msg-key should override them"
     (let [old-config timbre/*config*]
       (try
         (sut/install {:should-log-field-fn (fn [field-name _data]
@@ -347,6 +366,21 @@
            (is (not (contains? log :some-msg-key)))
            (is (not (contains? log :some-level-key)))])
         (finally
-          (timbre/set-config! old-config))))))
+          (timbre/set-config! old-config)))))
 
-;; TODO: add tests for coolect-vargs
+  (testing "custom collect-vargs"
+    (let [old-config timbre/*config*]
+      (try
+        (sut/install {:collect-vargs-fn final-map-as-args})
+        (let [log (parse-string (with-out-str
+                                  (timbre/info "test":duration 5)))]
+          (is (= "test :duration 5" (:msg log)))
+          (is (= nil (:duration log))))
+        (let [log (parse-string (with-out-str
+                                  (timbre/info "test" :duration 5 {:duration 10
+                                                                   :status 200})))]
+          (is (= "test :duration 5" (:msg log)))
+          (is (= 10 (:duration log)))
+          (is (= 200 (:status log))))
+        (finally
+          (timbre/set-config! old-config))))))
