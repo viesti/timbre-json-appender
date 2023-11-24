@@ -36,7 +36,7 @@
                              placeholders)]
           (recur placeholders (inc idx)))))))
 
-(defn collect-vargs [vargs]
+(defn default-collect-vargs-fn [vargs]
   (cond
     ;; if only two vargs are provided with types [string, map], take the map as args
     (and (= 2 (count vargs))
@@ -62,24 +62,21 @@
 (defn handle-vargs
   "Handles varg parsing, adding the msg and the given context to the given log map.
 
-   If inline-args is true, then the remaining vargs are added to :args,
-   otherwise they're inlined into the log-map."
-  [log-map ?msg-fmt vargs inline-args? msg-key]
-  (cond
-    ?msg-fmt (let [format-specifiers (count-format-specifiers ?msg-fmt)
-                   [message vargs] (split-at format-specifiers vargs)
-                   message (String/format ?msg-fmt (to-array message))
-                   args (if (and (= 1 (count vargs))
-                                 (map? (first vargs)))
-                          (first vargs)
-                          (apply hash-map vargs))
-                   log-map (assoc log-map msg-key message)]
-               (merge-log-map inline-args? log-map args))
-    :else (let [{:keys [message args]} (collect-vargs vargs)
-                log-map (if message
-                          (assoc log-map msg-key message)
-                          log-map)]
-            (merge-log-map inline-args? log-map args))))
+   collect-vargs-fn is a function that takes the vargs and should retun a map with :message and :args keys.
+
+   If inline-args? is true args extracted by collect-vargs-fn are inlined into the
+   log-map, otherwise they are added to :args."
+  [{:keys [log-map ?msg-fmt vargs inline-args? msg-key collect-vargs-fn]
+    :or {msg-key (:msg default-key-names)}}]
+  (let [interpolate (fn [vargs] (let [format-specifiers    (count-format-specifiers ?msg-fmt)
+                                      [message vargs]      (split-at format-specifiers vargs)
+                                      interpolated-message (String/format ?msg-fmt (to-array message))]
+                                  (into [interpolated-message] vargs)))
+        {:keys [message args]} (collect-vargs-fn (cond-> vargs
+                                                   ?msg-fmt interpolate))
+        log-map (cond-> log-map
+                  message (assoc msg-key message))]
+     (merge-log-map inline-args? log-map args)))
 
 (defn default-should-log-field-fn
   "Default function to determine whether to log fields.
@@ -135,12 +132,13 @@
   `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
   ([]
    (make-json-output-fn {}))
-  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
+  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names collect-vargs-fn]
      :or {pretty              false
           inline-args?        true
           should-log-field-fn default-should-log-field-fn
           ex-data-field-fn    default-ex-data-field-fn
-          key-names           default-key-names}}]
+          key-names           default-key-names
+          collect-vargs-fn    default-collect-vargs-fn}}]
    (let [key-names (merge default-key-names key-names)
          msg-key (or msg-key
                      (get key-names :msg))
@@ -155,11 +153,12 @@
                             (and (not inline-args?) (seq context)) {:args context}
                             (and inline-args? (seq context)) context
                             :else {})
-             log-map (-> (handle-vargs base-log-map
-                                       ?msg-fmt
-                                       vargs
-                                       inline-args?
-                                       msg-key)
+             log-map (-> (handle-vargs {:log-map          base-log-map
+                                        :?msg-fmt         ?msg-fmt
+                                        :vargs            vargs
+                                        :inline-args?     inline-args?
+                                        :msg-key          msg-key
+                                        :collect-vargs-fn collect-vargs-fn})
                          ;; apply base fields last to ensure they have precedent over context and vargs
                          (assoc (get key-names :timestamp) (force timestamp_))
                          (assoc level-key level)
@@ -205,14 +204,15 @@
   `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
   ([]
    (install nil))
-  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
-     :or {level-key           :level
-          pretty              false
+  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names collect-vargs-fn]
+     :or {pretty              false
           inline-args?        true
-          msg-key             :msg
           should-log-field-fn default-should-log-field-fn
           ex-data-field-fn    default-ex-data-field-fn
-          key-names           default-key-names}}]
+          key-names           default-key-names
+          msg-key             (:msg key-names)
+          level-key           (:level key-names)
+          collect-vargs-fn    default-collect-vargs-fn}}]
    (timbre/set-config! {:min-level (or min-level level :info)
                         :appenders {:json (json-appender {:pretty              pretty
                                                           :inline-args?        inline-args?
@@ -220,7 +220,8 @@
                                                           :msg-key             msg-key
                                                           :should-log-field-fn should-log-field-fn
                                                           :ex-data-field-fn    ex-data-field-fn
-                                                          :key-names           key-names})}
+                                                          :key-names           key-names
+                                                          :collect-vargs-fn    collect-vargs-fn})}
                         :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}})))
 
 (defn log-success [request-method uri status]
