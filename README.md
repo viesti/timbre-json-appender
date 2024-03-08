@@ -217,6 +217,10 @@ nil
 
 # Changelog
 
+2024-03-08 (0.2.12)
+
+- Indent arrays when pretty print enabled
+
 2023-10-27 (0.2.11)
 
 - Fix the defunct argument used in the single-argument (install) call.
