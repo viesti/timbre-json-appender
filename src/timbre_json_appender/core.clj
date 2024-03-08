@@ -146,7 +146,12 @@
                      (get key-names :msg))
          level-key (or level-key
                        (get key-names :level))
-         object-mapper (object-mapper {:pretty pretty})
+         object-mapper (let [^com.fasterxml.jackson.databind.ObjectMapper mapper (object-mapper {:pretty pretty})]
+                         (when pretty
+                           (.setDefaultPrettyPrinter mapper
+                                                     (doto (com.fasterxml.jackson.core.util.DefaultPrettyPrinter.)
+                                                       (.indentArraysWith com.fasterxml.jackson.core.util.DefaultIndenter/SYSTEM_LINEFEED_INSTANCE))))
+                         mapper)
          data-field-processor (partial #'process-ex-data-map ex-data-field-fn)]
      (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
        (let [;; apply context prior to resolving vargs so specific log values override context values
