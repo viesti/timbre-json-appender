@@ -302,7 +302,7 @@
                             (with-out-str (timbre/info "test"))))]
     (is (= "test" (:msg log))))
   (testing "json-error-fn"
-    (with-redefs [jsonista.core/write-value-as-string (fn [& args] (throw (Exception. "poks")))]
+    (with-redefs [jsonista.core/write-value-as-string (fn [& _args] (throw (Exception. "poks")))]
       (let [log (timbre/with-config (assoc timbre/default-config
                                            :output-fn (sut/make-json-output-fn {:json-error-fn (fn [_t] (println "something failed"))}))
                   (with-out-str (timbre/info "test")))]
