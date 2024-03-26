@@ -126,21 +126,23 @@
   "Creates a Timbre output-fn that prints JSON strings.
   Takes the following options:
 
-  `level-key`:    The key to use for log-level
-  `msg-key`:      The key to use for the message (default :msg)
-  `pretty`:       Pretty-print JSON
-  `inline-args?`: Place arguments on top level, instead of placing behind `args` field
+  `level-key`:           The key to use for log-level
+  `msg-key`:             The key to use for the message (default :msg)
+  `pretty`:              Pretty-print JSON
+  `inline-args?`:        Place arguments on top level, instead of placing behind `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
   `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`
-  `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
+  `key-names`:           Map of log key names. Can be used to override the default key names in `default-key-names`
+  `json-error-fn:`       Function to call if JSON serialization fails. Takes a single argument, a Throwable."
   ([]
    (make-json-output-fn {}))
-  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
+  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names json-error-fn]
      :or {pretty              false
           inline-args?        true
           should-log-field-fn default-should-log-field-fn
           ex-data-field-fn    default-ex-data-field-fn
-          key-names           default-key-names}}]
+          key-names           default-key-names
+          json-error-fn       (fn [_t])}}]
    (let [key-names (merge default-key-names key-names)
          msg-key (or msg-key
                      (get key-names :msg))
@@ -177,7 +179,8 @@
                              ?err (assoc (get key-names :err) (Throwable->map ?err))))]
          (try
            (json/write-value-as-string log-map object-mapper)
-           (catch Throwable _t
+           (catch Throwable t
+             (json-error-fn t)
              (timbre/default-output-fn data))))))))
 
 (defn json-appender
@@ -199,25 +202,27 @@
 (defn install
   "Installs json-appender as the sole appender for Timbre, options
 
-  `level`:        Timbre log level (deprecated, prefer min-level)
-  `min-level`:    Timbre log level
-  `level-key`:    The key to use for log-level
-  `msg-key`:      The key to use for the message (default :msg)
-  `pretty`:       Pretty-print JSON
-  `inline-args?`: Place arguments on top level, instead of placing behind `args` field
+  `level`:               Timbre log level (deprecated, prefer min-level)
+  `min-level`:           Timbre log level
+  `level-key`:           The key to use for log-level
+  `msg-key`:             The key to use for the message (default :msg)
+  `pretty`:              Pretty-print JSON
+  `inline-args?`:        Place arguments on top level, instead of placing behind `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
   `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`
-  `key-names`: Map of log key names. Can be used to override the default key names in `default-key-names`"
+  `key-names`:           Map of log key names. Can be used to override the default key names in `default-key-names`
+  `json-error-fn:`       Function to call if JSON serialization fails. Takes a single argument, a Throwable."
   ([]
    (install nil))
-  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names]
+  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names json-error-fn]
      :or {level-key           :level
           pretty              false
           inline-args?        true
           msg-key             :msg
           should-log-field-fn default-should-log-field-fn
           ex-data-field-fn    default-ex-data-field-fn
-          key-names           default-key-names}}]
+          key-names           default-key-names
+          json-error-fn       (fn [_t])}}]
    (timbre/set-config! {:min-level (or min-level level :info)
                         :appenders {:json (json-appender {:pretty              pretty
                                                           :inline-args?        inline-args?
@@ -225,7 +230,8 @@
                                                           :msg-key             msg-key
                                                           :should-log-field-fn should-log-field-fn
                                                           :ex-data-field-fn    ex-data-field-fn
-                                                          :key-names           key-names})}
+                                                          :key-names           key-names
+                                                          :json-error-fn       json-error-fn})}
                         :timestamp-opts {:pattern "yyyy-MM-dd'T'HH:mm:ssX"}})))
 
 (defn log-success [request-method uri status]

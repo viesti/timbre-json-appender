@@ -300,7 +300,13 @@
   (let [log (parse-string (timbre/with-config (assoc timbre/default-config
                                                      :output-fn (sut/make-json-output-fn))
                             (with-out-str (timbre/info "test"))))]
-    (is (= "test" (:msg log)))))
+    (is (= "test" (:msg log))))
+  (testing "json-error-fn"
+    (with-redefs [jsonista.core/write-value-as-string (fn [& args] (throw (Exception. "poks")))]
+      (let [log (timbre/with-config (assoc timbre/default-config
+                                           :output-fn (sut/make-json-output-fn {:json-error-fn (fn [_t] (println "something failed"))}))
+                  (with-out-str (timbre/info "test")))]
+        (is (.contains log "something failed"))))))
 
 (deftest key-names
   (let [log (json/read-value (timbre/with-config (assoc timbre/default-config
