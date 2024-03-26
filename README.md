@@ -217,6 +217,10 @@ nil
 
 # Changelog
 
+2024-03-26 (0.2.13)
+
+- If JSON serialization fails with an exception, allow to handle it with `:json-error-fn`
+
 2024-03-08 (0.2.12)
 
 - Indent arrays when pretty print enabled
