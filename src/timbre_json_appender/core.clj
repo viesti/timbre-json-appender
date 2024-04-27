@@ -1,5 +1,6 @@
 (ns timbre-json-appender.core
-  (:require [jsonista.core :as json]
+  (:require [clojure.string :as str]
+            [jsonista.core :as json]
             [taoensso.timbre :as timbre])
   (:import (com.fasterxml.jackson.databind SerializationFeature)
            (clojure.lang ExceptionInfo)))
@@ -122,6 +123,47 @@
       new-ex)
     ex))
 
+(defn make-pretty-printer []
+  (let [nesting (atom 0)
+        array-nesting (atom 0)]
+    (reify com.fasterxml.jackson.core.PrettyPrinter
+      (writeStartObject [_ g]
+        (reset! array-nesting 0)
+        (.writeRaw g "{\n")
+        (swap! nesting inc)
+        (.writeRaw g (str/join (repeat @nesting " "))))
+      (writeEndObject [_ g _nrOfEntries]
+        (.writeRaw g "\n")
+        (swap! nesting dec)
+        (.writeRaw g (str/join (repeat @nesting " ")))
+        (.writeRaw g "}"))
+      (beforeObjectEntries [_ _g])
+      (writeObjectFieldValueSeparator [_ g]
+        (.writeRaw g ": "))
+      (writeObjectEntrySeparator [_ g]
+        (.writeRaw g ",\n")
+        (.writeRaw g (str/join (repeat @nesting " "))))
+      (writeStartArray [_ g]
+        (if (pos? @array-nesting)
+          (do
+            (.writeRaw g "\n")
+            (.writeRaw g (str/join (repeat @nesting " ")))
+            (.writeRaw g "["))
+          (.writeRaw g "["))
+        (swap! nesting inc)
+        (swap! array-nesting inc))
+      (writeEndArray [_ g _nrOfValues]
+        (.writeRaw g "]")
+        (swap! array-nesting (fn [v]
+                               (max 0 (dec v))))
+        (swap! nesting dec))
+      (beforeArrayValues [_ _g]
+        )
+      (writeArrayValueSeparator [_ g]
+        (.writeRaw g ","))
+      (writeRootValueSeparator [_ _g]
+        ))))
+
 (defn make-json-output-fn
   "Creates a Timbre output-fn that prints JSON strings.
   Takes the following options:
@@ -150,9 +192,7 @@
                        (get key-names :level))
          object-mapper (let [^com.fasterxml.jackson.databind.ObjectMapper mapper (object-mapper {:pretty pretty})]
                          (when pretty
-                           (.setDefaultPrettyPrinter mapper
-                                                     (doto (com.fasterxml.jackson.core.util.DefaultPrettyPrinter.)
-                                                       (.indentArraysWith com.fasterxml.jackson.core.util.DefaultIndenter/SYSTEM_LINEFEED_INSTANCE))))
+                           (.setDefaultPrettyPrinter mapper (make-pretty-printer)))
                          mapper)
          data-field-processor (partial #'process-ex-data-map ex-data-field-fn)]
      (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
