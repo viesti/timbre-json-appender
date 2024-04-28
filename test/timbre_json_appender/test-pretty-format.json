@@ -1,0 +1,45 @@
+{
+ "err": {
+  "via": [{
+    "at": ["user$eval31162$fn__31163$fn__31164","invoke","NO_SOURCE_FILE",5597]
+   }],
+  "trace": [
+   ["user$eval31162$fn__31163$fn__31164","invoke","NO_SOURCE_FILE",5597],
+   ["clojure.lang.Delay","deref","Delay.java",42],
+   ["clojure.core$deref","invokeStatic","core.clj",2337],
+   ["clojure.core$deref","invoke","core.clj",2323],
+   ["taoensso.timbre$_log_BANG_","invokeStatic","timbre.cljc",641],
+   ["taoensso.timbre$_log_BANG_","invoke","timbre.cljc",631],
+   ["user$eval31162$fn__31163","invoke","NO_SOURCE_FILE",5597],
+   ["user$eval31162","invokeStatic","NO_SOURCE_FILE",5597],
+   ["user$eval31162","invoke","NO_SOURCE_FILE",5597],
+   ["clojure.lang.Compiler","eval","Compiler.java",7194],
+   ["clojure.lang.Compiler","eval","Compiler.java",7184],
+   ["clojure.lang.Compiler","eval","Compiler.java",7149],
+   ["clojure.core$eval","invokeStatic","core.clj",3215],
+   ["clojure.core$eval","invoke","core.clj",3211],
+   ["nrepl.middleware.interruptible_eval$evaluate$fn__1265$fn__1266","invoke","interruptible_eval.clj",87],
+   ["clojure.lang.AFn","applyToHelper","AFn.java",152],
+   ["clojure.lang.AFn","applyTo","AFn.java",144],
+   ["clojure.core$apply","invokeStatic","core.clj",667],
+   ["clojure.core$with_bindings_STAR_","invokeStatic","core.clj",1990],
+   ["clojure.core$with_bindings_STAR_","doInvoke","core.clj",1990],
+   ["clojure.lang.RestFn","invoke","RestFn.java",425],
+   ["nrepl.middleware.interruptible_eval$evaluate$fn__1265","invoke","interruptible_eval.clj",87],
+   ["clojure.main$repl$read_eval_print__9206$fn__9209","invoke","main.clj",437],
+   ["clojure.main$repl$read_eval_print__9206","invoke","main.clj",437],
+   ["clojure.main$repl$fn__9215","invoke","main.clj",458],
+   ["clojure.main$repl","invokeStatic","main.clj",458],
+   ["clojure.main$repl","doInvoke","main.clj",368],
+   ["clojure.lang.RestFn","invoke","RestFn.java",1523],
+   ["nrepl.middleware.interruptible_eval$evaluate","invokeStatic","interruptible_eval.clj",84],
+   ["nrepl.middleware.interruptible_eval$evaluate","invoke","interruptible_eval.clj",56],
+   ["nrepl.middleware.interruptible_eval$interruptible_eval$fn__1298$fn__1302","invoke","interruptible_eval.clj",152],
+   ["clojure.lang.AFn","run","AFn.java",22],
+   ["nrepl.middleware.session$session_exec$main_loop__1368$fn__1372","invoke","session.clj",218],
+   ["nrepl.middleware.session$session_exec$main_loop__1368","invoke","session.clj",217],
+   ["clojure.lang.AFn","run","AFn.java",22],
+   ["java.lang.Thread","run","Thread.java",1583]],
+  "cause": "poks"
+ }
+}

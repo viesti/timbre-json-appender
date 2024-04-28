@@ -123,21 +123,30 @@
       new-ex)
     ex))
 
-(defn make-pretty-printer []
+(defn make-pretty-printer
+  "Creates a PrettyPrinter that produces compact output for nested arrays,
+  which makes stack traces represented by Throwable->map easier to read"
+  []
   (let [nesting (atom 0)
         array-nesting (atom 0)]
     (reify com.fasterxml.jackson.core.PrettyPrinter
       (writeStartObject [_ g]
         (reset! array-nesting 0)
-        (.writeRaw g "{\n")
-        (swap! nesting inc)
-        (.writeRaw g (str/join (repeat @nesting " "))))
-      (writeEndObject [_ g _nrOfEntries]
+        (.writeRaw g "{")
+        (swap! nesting inc))
+      (writeEndObject [_ g nrOfEntries]
+        (if (zero? nrOfEntries)
+          (do
+            (.writeRaw g "}")
+            (swap! nesting dec))
+          (do
+            (.writeRaw g "\n")
+            (swap! nesting dec)
+            (.writeRaw g (str/join (repeat @nesting " ")))
+            (.writeRaw g "}"))))
+      (beforeObjectEntries [_ g]
         (.writeRaw g "\n")
-        (swap! nesting dec)
-        (.writeRaw g (str/join (repeat @nesting " ")))
-        (.writeRaw g "}"))
-      (beforeObjectEntries [_ _g])
+        (.writeRaw g (str/join (repeat @nesting " "))))
       (writeObjectFieldValueSeparator [_ g]
         (.writeRaw g ": "))
       (writeObjectEntrySeparator [_ g]
@@ -171,6 +180,7 @@
   `level-key`:           The key to use for log-level
   `msg-key`:             The key to use for the message (default :msg)
   `pretty`:              Pretty-print JSON
+  `pretty-array:`        Use a PrettyPrinter that makes more compact nested arrays
   `inline-args?`:        Place arguments on top level, instead of placing behind `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
   `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`
@@ -178,8 +188,9 @@
   `json-error-fn:`       Function to call if JSON serialization fails. Takes a single argument, a Throwable."
   ([]
    (make-json-output-fn {}))
-  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names json-error-fn]
+  ([{:keys [pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names json-error-fn pretty-array]
      :or {pretty              false
+          pretty-array        false
           inline-args?        true
           should-log-field-fn default-should-log-field-fn
           ex-data-field-fn    default-ex-data-field-fn
@@ -192,7 +203,11 @@
                        (get key-names :level))
          object-mapper (let [^com.fasterxml.jackson.databind.ObjectMapper mapper (object-mapper {:pretty pretty})]
                          (when pretty
-                           (.setDefaultPrettyPrinter mapper (make-pretty-printer)))
+                           (if pretty-array
+                             (.setDefaultPrettyPrinter mapper (make-pretty-printer))
+                             (.setDefaultPrettyPrinter mapper
+                                                     (doto (com.fasterxml.jackson.core.util.DefaultPrettyPrinter.)
+                                                       (.indentArraysWith com.fasterxml.jackson.core.util.DefaultIndenter/SYSTEM_LINEFEED_INSTANCE)))))
                          mapper)
          data-field-processor (partial #'process-ex-data-map ex-data-field-fn)]
      (fn [{:keys [level ?ns-str ?file ?line ?err vargs ?msg-fmt hostname_ context timestamp_] :as data}]
@@ -247,6 +262,7 @@
   `level-key`:           The key to use for log-level
   `msg-key`:             The key to use for the message (default :msg)
   `pretty`:              Pretty-print JSON
+  `pretty-array:`        Use a PrettyPrinter that makes more compact nested arrays
   `inline-args?`:        Place arguments on top level, instead of placing behind `args` field
   `should-log-field-fn`: A function which determines whether to log the given top-level field.  Defaults to `default-should-log-field-fn`
   `ex-data-field-fn`:    A function which pre-processes fields in the ex-info data map. Useful when ex-info data map includes non-Serializable values. Defaults to `default-ex-data-field-fn`
@@ -254,9 +270,10 @@
   `json-error-fn:`       Function to call if JSON serialization fails. Takes a single argument, a Throwable."
   ([]
    (install nil))
-  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names json-error-fn]
+  ([{:keys [level min-level pretty inline-args? level-key msg-key should-log-field-fn ex-data-field-fn key-names json-error-fn pretty-array]
      :or {level-key           :level
           pretty              false
+          pretty-array        false
           inline-args?        true
           msg-key             :msg
           should-log-field-fn default-should-log-field-fn
@@ -265,6 +282,7 @@
           json-error-fn       (fn [_t])}}]
    (timbre/set-config! {:min-level (or min-level level :info)
                         :appenders {:json (json-appender {:pretty              pretty
+                                                          :pretty-array        pretty-array
                                                           :inline-args?        inline-args?
                                                           :level-key           level-key
                                                           :msg-key             msg-key

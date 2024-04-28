@@ -1,6 +1,7 @@
 (ns timbre-json-appender.core-test
-  (:require [clojure.string :as str]
-            [clojure.test :refer [deftest is testing] :as t]
+  (:require [clojure.test :refer [deftest is testing]]
+            [clojure.string :as str]
+            [clojure.java.io :as io]
             [timbre-json-appender.core :as sut]
             [jsonista.core :as json]
             [taoensso.timbre :as timbre]))
@@ -328,3 +329,38 @@
           (is (not (contains? log :thread))))
         (finally
           (timbre/set-config! old-config))))))
+
+(deftest pretty-printer
+  (testing "2 dimensional array"
+    (is (=
+          "{
+ \"a\": [
+  [null,null,null],
+  [null,null,null],
+  [null,null,null]]
+}"
+          (jsonista.core/write-value-as-string {:a (make-array Object 3 3)}
+                                               (doto (jsonista.core/object-mapper {:pretty true})
+                                                 (.setDefaultPrettyPrinter (sut/make-pretty-printer)))))))
+  (testing "3 dimensional array"
+    (let [a (make-array Object 3 3 3)]
+      (doseq [x a]
+          (doseq [y x]
+            (java.util.Arrays/fill y {})))
+      (is (= "{
+ \"a\": [
+  [
+   [{},{},{}],[{},{},{}],[{},{},{}]],[
+   [{},{},{}],[{},{},{}],[{},{},{}]],[
+   [{},{},{}],[{},{},{}],[{},{},{}]]]
+}"
+             (jsonista.core/write-value-as-string {:a a}
+                                               (doto (jsonista.core/object-mapper {:pretty true})
+                                                 (.setDefaultPrettyPrinter (sut/make-pretty-printer))))))))
+  (testing "sample Throwable->map"
+    (let [sample (slurp (io/resource "timbre_json_appender/test-pretty-format.json"))
+          sample-data (jsonista.core/read-value (io/resource "timbre_json_appender/test-pretty-format.json"))]
+      (is (= (.trim sample)
+             (jsonista.core/write-value-as-string sample-data
+                                                  (doto (jsonista.core/object-mapper {:pretty true})
+                                                    (.setDefaultPrettyPrinter (sut/make-pretty-printer)))))))))
