@@ -217,6 +217,11 @@ nil
 
 # Changelog
 
+2024-04-28 (0.2.14)
+
+- Add `:pretty-array` option, effective then `:pretty` is `true`, to select pretty printing that produces compact nested arrays.
+  - Makes reading stack traces easier.
+
 2024-03-26 (0.2.13)
 
 - If JSON serialization fails with an exception, allow to handle it with `:json-error-fn`
